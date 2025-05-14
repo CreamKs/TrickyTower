@@ -16,7 +16,7 @@
 
         <!-- TrickyTowerActivity를 런처 액티비티로 설정 -->
         <activity
-            android:name=".trickytower.TrickyTowerActivity"
+            android:name=".Activity.TrickyTowerActivity"
             android:exported="true"
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize">

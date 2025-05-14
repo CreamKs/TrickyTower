@@ -1,4 +1,4 @@
-package com.example.trickytower.app;
+package com.example.trickytower.Activity;
 
 import android.os.Bundle;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.activity.GameActivity;
