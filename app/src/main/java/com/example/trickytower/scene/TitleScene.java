@@ -50,6 +50,13 @@ public class TitleScene extends Scene {
         add(SceneLayer.UI, startButton);
     }
 
+    @Override
+    protected int getTouchLayerIndex() {
+        // UI 레이어를 터치 대상으로 지정
+        return SceneLayer.UI.ordinal();
+    }
+
+
     /**
      * changeScene 헬퍼: GameView를 통해 씬 전환
      * @param nextScene 전환할 씬 객체
