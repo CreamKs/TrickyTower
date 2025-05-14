@@ -20,5 +20,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "TrickyTower"
-include(":app")
+include(":app", ":a2dg")
  

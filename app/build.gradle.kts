@@ -6,6 +6,11 @@ android {
     namespace = "com.example.trickytower"
     compileSdk = 35
 
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.example.trickytower"
         minSdk = 24
@@ -37,6 +42,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+    implementation(project(":a2dg"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
