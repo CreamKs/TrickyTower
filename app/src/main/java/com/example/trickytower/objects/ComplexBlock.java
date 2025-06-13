@@ -30,7 +30,8 @@ import java.util.List;
  */
 public class ComplexBlock extends Sprite implements IBoxCollidable {
     private static final float PPM = 50f;
-    /** 기본 너비를 맞추기 위한 기준 셀 크기 */
+    /** 기본 그리드 크기를 맞추기 위한 상수 */
+    public static final int GRID_SIZE = 4;
     private static final float DEFAULT_CELLS = 4f;
     private static final float IMAGE_SCALE = 0.8f;
 
@@ -72,7 +73,6 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         setPosition(pivotX, pivotY, scaledW, scaledH);
 
         buildLocalBoxes();
-        updateDimensions();
         initBoxes();
     }
 
@@ -141,25 +141,6 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         }
     }
 
-    /** localBoxes 기준으로 스프라이트의 폭과 높이를 갱신 */
-    private void updateDimensions() {
-        if (localBoxes.isEmpty()) return;
-        float minX = Float.MAX_VALUE, maxX = Float.MIN_VALUE;
-        float minY = Float.MAX_VALUE, maxY = Float.MIN_VALUE;
-        for (LocalBox lb : localBoxes) {
-            float left = lb.cx - lb.halfW;
-            float right = lb.cx + lb.halfW;
-            float top = lb.cy - lb.halfH;
-            float bottom = lb.cy + lb.halfH;
-            if (left < minX) minX = left;
-            if (right > maxX) maxX = right;
-            if (top < minY) minY = top;
-            if (bottom > maxY) maxY = bottom;
-        }
-        float w = maxX - minX;
-        float h = maxY - minY;
-        setPosition(pivotX, pivotY, w, h);
-    }
 
     /** 월드에 물리 바디 생성 */
     public void createPhysicsBody(World world) {
@@ -214,7 +195,6 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
         rotateLocalBoxes90();
-        updateDimensions();
         recreateFixtures();
         initBoxes();
     }
