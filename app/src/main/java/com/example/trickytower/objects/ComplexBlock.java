@@ -16,7 +16,6 @@ import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
 import org.jbox2d.dynamics.FixtureDef;
-import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.World;
 
 import com.example.trickytower.util.RectUtil;
@@ -45,7 +44,6 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
 
     private final List<LocalBox> localBoxes = new ArrayList<>();
     private final List<RectF> boxes = new ArrayList<>();
-    private final List<Fixture> fixtures = new ArrayList<>();
     private final Paint paint = new Paint();
     private static final Paint debugPaint = new Paint();
     static {
@@ -110,36 +108,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         localBoxes.add(b);
     }
 
-    /** 현 바디의 모든 피처를 제거 후 다시 생성 */
-    private void recreateFixtures() {
-        if (body == null) return;
-        for (Fixture f : fixtures) {
-            body.destroyFixture(f);
-        }
-        fixtures.clear();
-        for (LocalBox lb : localBoxes) {
-            PolygonShape shape = new PolygonShape();
-            shape.setAsBox(lb.halfW / PPM, lb.halfH / PPM,
-                    new Vec2(lb.cx / PPM, lb.cy / PPM), 0);
-            FixtureDef fd = new FixtureDef();
-            fd.shape = shape;
-            fd.density = 1f;
-            Fixture fixture = body.createFixture(fd);
-            fixtures.add(fixture);
-        }
-    }
-
-    /** localBoxes를 90도 회전시킨다 */
-    private void rotateLocalBoxes90() {
-        for (LocalBox lb : localBoxes) {
-            float oldCx = lb.cx;
-            lb.cx = -lb.cy;
-            lb.cy = oldCx;
-            float oldHalf = lb.halfW;
-            lb.halfW = lb.halfH;
-            lb.halfH = oldHalf;
-        }
-    }
+    /* no-op: fixtures rotate automatically with the body */
 
 
     /** 월드에 물리 바디 생성 */
@@ -157,8 +126,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
             FixtureDef fd = new FixtureDef();
             fd.shape = shape;
             fd.density = 1f;
-            Fixture f = body.createFixture(fd);
-            fixtures.add(f);
+            body.createFixture(fd);
         }
     }
 
@@ -194,8 +162,6 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
-        rotateLocalBoxes90();
-        recreateFixtures();
         initBoxes();
     }
 
