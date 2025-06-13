@@ -3,49 +3,39 @@ package com.example.trickytower.util;
 import android.graphics.RectF;
 import java.util.List;
 
-import com.example.trickytower.objects.Block;
-import kr.ac.tukorea.ge.spgp2025.a2dg.framework.interfaces.IBoxCollidable;
+import com.example.trickytower.objects.ComplexBlock;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
 
 /**
- * BlockCollisionHelper
- *
- * 블록(current)과 쌓인 블록들 및 화면 바닥 간 충돌을 처리합니다.
+ * BlockCollisionHelper: 셀 단위 충돌 감지
  */
 public class BlockCollisionHelper {
     /**
-     * 블록과 바닥 혹은 쌓인 블록 간의 충돌을 검사하고,
-     * 충돌 시 contactY(충돌 지점 Y 좌표)를 반환합니다.
-     * @param current 검사항목 블록
-     * @param landedBlocks IBoxCollidable을 구현한 쌓인 블록 리스트
-     * @return 충돌 시 contactY (>=0), 충돌 없으면 Float.NaN
+     * 현재 블록이 충돌할 Y 좌표(픽셀 단위) 반환
+     * NaN이면 충돌 없음
      */
-    public static float getCollisionContactY(Block current, List<IBoxCollidable> landedBlocks) {
-        RectF rect = current.getCollisionRect();
-        float bottom = rect.bottom;
-        // 1) 화면 바닥과 충돌
-        if (bottom >= Metrics.height) {
-            return Metrics.height;
-        }
-        // 2) 쌓인 블록들과 충돌 검사
-        for (IBoxCollidable landed : landedBlocks) {
-            RectF lr = landed.getCollisionRect();
-            float cx = rect.centerX();
-            if (cx >= lr.left && cx <= lr.right && bottom >= lr.top) {
-                return lr.top;
+    public static float getCollisionContactY(ComplexBlock block, List<ComplexBlock> landedBlocks) {
+        float contactY = Float.NaN;
+        List<RectF> cells = block.getCellBoxes();
+        for (RectF cell : cells) {
+            float bottom = cell.bottom;
+            // 바닥 충돌
+            if (bottom >= Metrics.height) {
+                contactY = Float.isNaN(contactY) ? Metrics.height : Math.min(contactY, Metrics.height);
+            }
+            // 이미 착지한 블록의 각 셀과 비교
+            for (ComplexBlock landed : landedBlocks) {
+                for (RectF landedCell : landed.getCellBoxes()) {
+                    // 가로 범위 겹침 && landedCell.top이 현재 cell.bottom 아래
+                    if (landedCell.left < cell.right && landedCell.right > cell.left
+                            && landedCell.top >= bottom) {
+                        contactY = Float.isNaN(contactY)
+                                ? landedCell.top
+                                : Math.min(contactY, landedCell.top);
+                    }
+                }
             }
         }
-        // 충돌 없음
-        return Float.NaN;
-    }
-
-    /**
-     * 두 블록(Landed 블록과 현재 블록)의 X축 겹침 여부 반환
-     */
-    public static boolean isXOverlap(Block block, IBoxCollidable landed) {
-        RectF r1 = block.getCollisionRect();
-        RectF r2 = landed.getCollisionRect();
-        float cx = r1.centerX();
-        return cx >= r2.left && cx <= r2.right;
+        return contactY;
     }
 }

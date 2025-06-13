@@ -34,7 +34,7 @@ public class TitleScene extends Scene {
         float btnWidth = 300f;
         float btnHeight = 100f;
         Button startButton = new Button(
-                R.drawable.btn_start,
+                R.mipmap.btn_start,
                 Metrics.width / 2f,
                 Metrics.height * 0.75f,
                 btnWidth,

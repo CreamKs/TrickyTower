@@ -42,6 +42,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+    implementation("org.jbox2d:jbox2d-library:2.2.1.1")
     implementation(project(":a2dg"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
