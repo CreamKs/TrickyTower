@@ -16,6 +16,7 @@ import org.jbox2d.dynamics.Body;
 import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
 import org.jbox2d.dynamics.FixtureDef;
+import org.jbox2d.dynamics.Fixture;
 import org.jbox2d.dynamics.World;
 
 import com.example.trickytower.util.RectUtil;
@@ -42,6 +43,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
 
 
     private final List<RectF> boxes = new ArrayList<>();
+    private final List<Fixture> fixtures = new ArrayList<>();
     private final Paint paint = new Paint();
     private static final Paint debugPaint = new Paint();
     static {
@@ -79,6 +81,17 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         bd.position.set(pivotX / PPM, pivotY / PPM);
         bd.fixedRotation = true;
         body = world.createBody(bd);
+        recreateFixtures();
+    }
+
+    /** 현재 mask에 맞춰 body의 fixture를 모두 새로 만든다 */
+    private void recreateFixtures() {
+        if (body == null) return;
+        // 기존 fixture 제거
+        for (Fixture f : fixtures) {
+            body.destroyFixture(f);
+        }
+        fixtures.clear();
 
         for (int r = 0; r < GRID_SIZE; r++) {
             for (int c = 0; c < GRID_SIZE; c++) {
@@ -93,7 +106,8 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
                 FixtureDef fd = new FixtureDef();
                 fd.shape = shape;
                 fd.density = 1f;
-                body.createFixture(fd);
+                Fixture fixture = body.createFixture(fd);
+                fixtures.add(fixture);
             }
         }
     }
@@ -142,6 +156,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
         RectUtil.setRect(dstRect, pos.x * PPM, pos.y * PPM, GRID_SIZE * scaledCellSize, GRID_SIZE * scaledCellSize);
+        recreateFixtures();
         initBoxes();
     }
 
