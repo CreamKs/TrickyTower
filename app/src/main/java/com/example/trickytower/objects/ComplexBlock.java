@@ -111,22 +111,34 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
+        initBoxes();
     }
 
     private void initBoxes() {
         boxes.clear();
-        float left0 = dstRect.left;
-        float top0 = dstRect.top;
+        float cx = dstRect.centerX();
+        float cy = dstRect.centerY();
+        float angle = body != null ? body.getAngle() : 0f;
+        float cos = (float) Math.cos(angle);
+        float sin = (float) Math.sin(angle);
+
         for (int r = 0; r < GRID_SIZE; r++) {
             for (int c = 0; c < GRID_SIZE; c++) {
-                if (mask[r][c]) {
-                    boxes.add(new RectF(
-                        left0 + c * cellSize,
-                        top0 + r * cellSize,
-                        left0 + (c + 1) * cellSize,
-                        top0 + (r + 1) * cellSize
-                    ));
-                }
+                if (!mask[r][c]) continue;
+                // 셀 중심의 로컬 좌표(피벗 기준)
+                float localX = ((c + 0.5f) - GRID_SIZE / 2f) * cellSize;
+                float localY = ((r + 0.5f) - GRID_SIZE / 2f) * cellSize;
+
+                // 회전 변환 후 월드 좌표
+                float worldX = cx + localX * cos - localY * sin;
+                float worldY = cy + localX * sin + localY * cos;
+
+                boxes.add(new RectF(
+                        worldX - cellSize / 2f,
+                        worldY - cellSize / 2f,
+                        worldX + cellSize / 2f,
+                        worldY + cellSize / 2f
+                ));
             }
         }
     }

@@ -26,9 +26,9 @@ public class BlockCollisionHelper {
             // 이미 착지한 블록의 각 셀과 비교
             for (ComplexBlock landed : landedBlocks) {
                 for (RectF landedCell : landed.getCellBoxes()) {
-                    // 가로 범위 겹침 && landedCell.top이 현재 cell.bottom 아래
+                    // 가로 범위 겹침 && 현재 셀의 bottom이 landedCell의 top 이하(즉, 실제 접촉 또는 통과)
                     if (landedCell.left < cell.right && landedCell.right > cell.left
-                            && landedCell.top >= bottom) {
+                            && bottom >= landedCell.top) {
                         contactY = Float.isNaN(contactY)
                                 ? landedCell.top
                                 : Math.min(contactY, landedCell.top);
