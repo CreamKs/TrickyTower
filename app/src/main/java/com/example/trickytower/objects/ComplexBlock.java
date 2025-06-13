@@ -71,7 +71,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         BodyDef bd = new BodyDef();
         bd.type = BodyType.DYNAMIC;
         bd.position.set(pivotX / PPM, pivotY / PPM);
-        bd.fixedRotation = false;
+        bd.fixedRotation = true;
         body = world.createBody(bd);
 
         for (int r = 0; r < GRID_SIZE; r++) {
@@ -182,12 +182,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         float angle = body != null ? body.getAngle() : 0f;
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
-        float absCos = Math.abs(cos);
-        float absSin = Math.abs(sin);
-
         float baseHalf = cellSize / 2f;
-
-        RectF union = new RectF(Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE);
 
         for (int r = 0; r < GRID_SIZE; r++) {
             for (int c = 0; c < GRID_SIZE; c++) {
@@ -198,7 +193,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
                 float worldX = px + localX * cos - localY * sin;
                 float worldY = py + localX * sin + localY * cos;
 
-                float half = baseHalf * (absCos + absSin);
+                float half = baseHalf;
 
                 RectF rect = new RectF(
                         worldX - half,
@@ -207,20 +202,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
                         worldY + half
                 );
                 boxes.add(rect);
-
-                if (rect.left < union.left) union.left = rect.left;
-                if (rect.top < union.top) union.top = rect.top;
-                if (rect.right > union.right) union.right = rect.right;
-                if (rect.bottom > union.bottom) union.bottom = rect.bottom;
             }
-        }
-
-        if (!boxes.isEmpty()) {
-            dstRect.set(union);
-            this.x = union.centerX();
-            this.y = union.centerY();
-            this.width = union.width();
-            this.height = union.height();
         }
     }
 
