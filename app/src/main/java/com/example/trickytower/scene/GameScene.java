@@ -18,6 +18,7 @@ import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
 import org.jbox2d.dynamics.FixtureDef;
 import org.jbox2d.dynamics.World;
+import org.jbox2d.dynamics.contacts.ContactEdge;
 import org.jbox2d.collision.shapes.EdgeShape;
 
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
@@ -70,6 +71,7 @@ public class GameScene extends Scene {
         FixtureDef fd = new FixtureDef();
         fd.shape = shape;
         ground.createFixture(fd);
+        ground.setUserData("GROUND");
     }
 
     private void spawnBlock() {
@@ -84,6 +86,26 @@ public class GameScene extends Scene {
         Log.d("GameScene", "spawnBlock: " + type + " at (" + startX + ", " + startY + ")");
     }
 
+    private void checkForLanding() {
+        Body body = current.getBody();
+        for (ContactEdge ce = body.getContactList(); ce != null; ce = ce.next) {
+            if (!ce.contact.isTouching()) continue;
+            Body other = ce.other;
+            Object data = other.getUserData();
+            if ("GROUND".equals(data) || data instanceof ComplexBlock) {
+                float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks);
+                float bottomOffset = current.getBottomOffset();
+                float centerY = contactY - bottomOffset;
+                body.setLinearVelocity(new Vec2(0, 0));
+                body.setType(BodyType.STATIC);
+                body.setTransform(new Vec2(body.getPosition().x, centerY / PPM), body.getAngle());
+                landedBlocks.add(current);
+                spawnBlock();
+                break;
+            }
+        }
+    }
+
     @Override
     public void update() {
         if (current != null && isFastDropping) {
@@ -94,20 +116,7 @@ public class GameScene extends Scene {
         if (current != null) current.update();
         for (ComplexBlock b : landedBlocks) b.update();
 
-        if (current != null) {
-            float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks);
-            if (!Float.isNaN(contactY)) {
-                float bottomOffset = current.getBottomOffset();
-                float centerYPixel = contactY - bottomOffset;
-                Vec2 pos = current.getBody().getPosition();
-                Body body = current.getBody();
-                body.setLinearVelocity(new Vec2(0, 0));
-                body.setType(BodyType.STATIC);
-                body.setTransform(new Vec2(pos.x, centerYPixel/PPM), body.getAngle());
-                landedBlocks.add(current);
-                spawnBlock();
-            }
-        }
+        if (current != null) checkForLanding();
     }
 
     @Override
@@ -140,7 +149,7 @@ public class GameScene extends Scene {
                 if (!touchEnabled) break;
                 touchEnabled = false;
                 if (Math.hypot(pts[0]-touchStartX, pts[1]-touchStartY) < CELL_SIZE/4f) {
-                    current.rotate90();
+                    current.rotate180();
                 }
                 isFastDropping = false;
                 break;

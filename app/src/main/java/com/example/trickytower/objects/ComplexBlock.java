@@ -81,6 +81,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         bd.position.set(pivotX / PPM, pivotY / PPM);
         bd.fixedRotation = true;
         body = world.createBody(bd);
+        body.setUserData(this);
         recreateFixtures();
     }
 
@@ -158,6 +159,12 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         RectUtil.setRect(dstRect, pos.x * PPM, pos.y * PPM, GRID_SIZE * scaledCellSize, GRID_SIZE * scaledCellSize);
         recreateFixtures();
         initBoxes();
+    }
+
+    /** 180° 회전 */
+    public void rotate180() {
+        rotate90();
+        rotate90();
     }
 
     private void initBoxes() {
