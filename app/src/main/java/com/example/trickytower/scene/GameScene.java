@@ -149,7 +149,7 @@ public class GameScene extends Scene {
                 if (!touchEnabled) break;
                 touchEnabled = false;
                 if (Math.hypot(pts[0]-touchStartX, pts[1]-touchStartY) < CELL_SIZE/4f) {
-                    current.rotate180();
+                    current.rotate90();
                 }
                 isFastDropping = false;
                 break;
