@@ -35,11 +35,6 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
     // 4x4 그리드 마스크
     private boolean[][] mask;
 
-    // 현재 모양의 최소 영역 정보
-    private int minRow, minCol, widthCells, heightCells;
-
-    // 피벗(바디 중심)에서 실제 그리기 영역 중심까지의 오프셋
-    private float offsetX, offsetY;
 
     private final List<RectF> boxes = new ArrayList<>();
     private final Paint paint = new Paint();
@@ -61,8 +56,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
             System.arraycopy(orig[r], 0, mask[r], 0, GRID_SIZE);
         }
 
-        recalcBounds();
-        setPosition(pivotX + offsetX, pivotY + offsetY, widthCells * cellSize, heightCells * cellSize);
+        setPosition(pivotX, pivotY, GRID_SIZE * cellSize, GRID_SIZE * cellSize);
         initBoxes();
     }
 
@@ -98,12 +92,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float px = pos.x * PPM;
         float py = pos.y * PPM;
-        float angle = body.getAngle();
-        float cos = (float) Math.cos(angle);
-        float sin = (float) Math.sin(angle);
-        float ox = offsetX * cos - offsetY * sin;
-        float oy = offsetX * sin + offsetY * cos;
-        RectUtil.setRect(dstRect, px + ox, py + oy, widthCells * cellSize, heightCells * cellSize);
+        RectUtil.setRect(dstRect, px, py, GRID_SIZE * cellSize, GRID_SIZE * cellSize);
         initBoxes();
     }
 
@@ -135,44 +124,8 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
-
-        recalcBounds();
-
-        float cos = (float) Math.cos(newAngle);
-        float sin = (float) Math.sin(newAngle);
-        float ox = offsetX * cos - offsetY * sin;
-        float oy = offsetX * sin + offsetY * cos;
-        RectUtil.setRect(dstRect, pos.x * PPM + ox, pos.y * PPM + oy, widthCells * cellSize, heightCells * cellSize);
+        RectUtil.setRect(dstRect, pos.x * PPM, pos.y * PPM, GRID_SIZE * cellSize, GRID_SIZE * cellSize);
         initBoxes();
-    }
-
-    private void recalcBounds() {
-        minRow = GRID_SIZE; minCol = GRID_SIZE;
-        int maxRow = -1, maxCol = -1;
-        for (int r = 0; r < GRID_SIZE; r++) {
-            for (int c = 0; c < GRID_SIZE; c++) {
-                if (!mask[r][c]) continue;
-                if (r < minRow) minRow = r;
-                if (c < minCol) minCol = c;
-                if (r > maxRow) maxRow = r;
-                if (c > maxCol) maxCol = c;
-            }
-        }
-        if (maxRow < minRow) { // all empty, fallback
-            minRow = minCol = 0;
-            maxRow = maxCol = 0;
-        }
-        widthCells = maxCol - minCol + 1;
-        heightCells = maxRow - minRow + 1;
-
-        this.width = widthCells * cellSize;
-        this.height = heightCells * cellSize;
-
-        // 피벗과 그리기 영역 중심 사이의 오프셋 계산
-        float centerCol = minCol + widthCells / 2f;
-        float centerRow = minRow + heightCells / 2f;
-        offsetX = (centerCol - PIVOT) * cellSize;
-        offsetY = (centerRow - PIVOT) * cellSize;
     }
 
     private void initBoxes() {
