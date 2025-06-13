@@ -10,6 +10,7 @@ import java.util.Random;
 import com.example.trickytower.R;
 import com.example.trickytower.objects.ComplexBlock;
 import com.example.trickytower.objects.ShapeType;
+import com.example.trickytower.objects.ScoreLabel;
 import com.example.trickytower.util.BlockCollisionHelper;
 
 import org.jbox2d.common.Vec2;
@@ -39,6 +40,8 @@ public class GameScene extends Scene {
     private final List<ComplexBlock> landedBlocks = new ArrayList<>();
     private final Random rand = new Random();
 
+    private ScoreLabel scoreLabel;
+
     private boolean touchEnabled;
     private boolean isFastDropping;
     private float touchStartX, touchStartY;
@@ -57,6 +60,8 @@ public class GameScene extends Scene {
             Metrics.width/2f, Metrics.height/2f,
             Metrics.width, Metrics.height
         ));
+        scoreLabel = new ScoreLabel(80f, 100f, 60f);
+        add(SceneLayer.UI, scoreLabel);
         spawnBlock();
     }
 
@@ -105,6 +110,7 @@ public class GameScene extends Scene {
                 body.setType(BodyType.STATIC);
                 body.setTransform(new Vec2(pos.x, centerYPixel/PPM), body.getAngle());
                 landedBlocks.add(current);
+                if (scoreLabel != null) scoreLabel.add(1);
                 spawnBlock();
             }
         }
