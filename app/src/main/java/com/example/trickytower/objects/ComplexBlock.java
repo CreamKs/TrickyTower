@@ -30,6 +30,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
     private final ShapeType type;
     private final float cellSize;
     private boolean[][] mask;  // 4x4 그리드
+    private int minRow, minCol, widthCells, heightCells;
     private final List<RectF> boxes = new ArrayList<>();
     private final Paint paint = new Paint();
     private Body body;
@@ -39,12 +40,13 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         this.type = type;
         this.cellSize = cellSize;
         paint.setFilterBitmap(false);
-        // mask 초기화 (4x4)
         mask = new boolean[GRID_SIZE][GRID_SIZE];
         boolean[][] orig = type.mask;
         for (int r = 0; r < GRID_SIZE; r++) {
             System.arraycopy(orig[r], 0, mask[r], 0, GRID_SIZE);
         }
+        recalcBounds();
+        setPosition(x, y, widthCells * cellSize, heightCells * cellSize);
         initBoxes();
     }
 
@@ -60,10 +62,9 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
                 if (!mask[r][c]) continue;
                 PolygonShape shape = new PolygonShape();
                 float half = cellSize / 2f / PPM;
-                // 4x4 피벗(중앙) 기준 상대 좌표
                 Vec2 center = new Vec2(
-                    ((c + 0.5f) - GRID_SIZE / 2f) * cellSize / PPM,
-                    ((r + 0.5f) - GRID_SIZE / 2f) * cellSize / PPM
+                    ((c - minCol + 0.5f) - widthCells / 2f) * cellSize / PPM,
+                    ((r - minRow + 0.5f) - heightCells / 2f) * cellSize / PPM
                 );
                 shape.setAsBox(half, half, center, 0);
                 FixtureDef fd = new FixtureDef();
@@ -80,8 +81,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float centerX = pos.x * PPM;
         float centerY = pos.y * PPM;
-        // dstRect를 body 위치와 크기에 맞춰 설정
-        RectUtil.setRect(dstRect, centerX, centerY, cellSize * GRID_SIZE, cellSize * GRID_SIZE);
+        RectUtil.setRect(dstRect, centerX, centerY, widthCells * cellSize, heightCells * cellSize);
         initBoxes();
     }
 
@@ -111,7 +111,31 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
+        recalcBounds();
+        RectUtil.setRect(dstRect, dstRect.centerX(), dstRect.centerY(), widthCells * cellSize, heightCells * cellSize);
         initBoxes();
+    }
+
+    private void recalcBounds() {
+        minRow = GRID_SIZE; minCol = GRID_SIZE;
+        int maxRow = -1, maxCol = -1;
+        for (int r = 0; r < GRID_SIZE; r++) {
+            for (int c = 0; c < GRID_SIZE; c++) {
+                if (!mask[r][c]) continue;
+                if (r < minRow) minRow = r;
+                if (c < minCol) minCol = c;
+                if (r > maxRow) maxRow = r;
+                if (c > maxCol) maxCol = c;
+            }
+        }
+        if (maxRow < minRow) { // all empty, fallback
+            minRow = minCol = 0;
+            maxRow = maxCol = 0;
+        }
+        widthCells = maxCol - minCol + 1;
+        heightCells = maxRow - minRow + 1;
+        this.width = widthCells * cellSize;
+        this.height = heightCells * cellSize;
     }
 
     private void initBoxes() {
@@ -125,11 +149,9 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         for (int r = 0; r < GRID_SIZE; r++) {
             for (int c = 0; c < GRID_SIZE; c++) {
                 if (!mask[r][c]) continue;
-                // 셀 중심의 로컬 좌표(피벗 기준)
-                float localX = ((c + 0.5f) - GRID_SIZE / 2f) * cellSize;
-                float localY = ((r + 0.5f) - GRID_SIZE / 2f) * cellSize;
+                float localX = ((c - minCol + 0.5f) - widthCells / 2f) * cellSize;
+                float localY = ((r - minRow + 0.5f) - heightCells / 2f) * cellSize;
 
-                // 회전 변환 후 월드 좌표
                 float worldX = cx + localX * cos - localY * sin;
                 float worldY = cy + localX * sin + localY * cos;
 

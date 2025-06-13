@@ -97,7 +97,7 @@ public class GameScene extends Scene {
         if (current != null) {
             float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks);
             if (!Float.isNaN(contactY)) {
-                float halfH = GRID_SIZE * CELL_SIZE / 2f;
+                float halfH = current.getHeight() / 2f;
                 float centerYPixel = contactY - halfH;
                 Vec2 pos = current.getBody().getPosition();
                 Body body = current.getBody();
