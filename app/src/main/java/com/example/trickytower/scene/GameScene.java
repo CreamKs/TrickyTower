@@ -25,7 +25,7 @@ import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
 
 public class GameScene extends Scene {
-    private static final float CELL_SIZE = 50f;
+    private static final float CELL_SIZE = 40f;
     private static final float PPM = 50f;
     private static final int GRID_SIZE = ComplexBlock.GRID_SIZE;
     private static final Vec2 GRAVITY = new Vec2(0, 9.8f);

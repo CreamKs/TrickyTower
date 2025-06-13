@@ -30,9 +30,12 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
     private static final float PPM = 50f;
     public static final int GRID_SIZE = 4;
     private static final float PIVOT = GRID_SIZE / 2f;
+    /** 이미지와 히트박스 크기를 결정하는 비율 */
+    private static final float IMAGE_SCALE = 0.8f;
 
     private final ShapeType type;
     private final float cellSize;
+    private final float scaledCellSize;
 
     // 4x4 그리드 마스크
     private boolean[][] mask;
@@ -53,6 +56,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         super(type.resId);
         this.type = type;
         this.cellSize = cellSize;
+        this.scaledCellSize = cellSize * IMAGE_SCALE;
         this.pivotX = x;
         this.pivotY = y;
 
@@ -64,7 +68,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
             System.arraycopy(orig[r], 0, mask[r], 0, GRID_SIZE);
         }
 
-        setPosition(pivotX, pivotY, GRID_SIZE * cellSize, GRID_SIZE * cellSize);
+        setPosition(pivotX, pivotY, GRID_SIZE * scaledCellSize, GRID_SIZE * scaledCellSize);
         initBoxes();
     }
 
@@ -80,10 +84,10 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
             for (int c = 0; c < GRID_SIZE; c++) {
                 if (!mask[r][c]) continue;
                 PolygonShape shape = new PolygonShape();
-                float half = cellSize / 2f / PPM;
+                float half = scaledCellSize / 2f / PPM;
                 Vec2 center = new Vec2(
-                        ((c + 0.5f) - PIVOT) * cellSize / PPM,
-                        ((r + 0.5f) - PIVOT) * cellSize / PPM
+                        ((c + 0.5f) - PIVOT) * scaledCellSize / PPM,
+                        ((r + 0.5f) - PIVOT) * scaledCellSize / PPM
                 );
                 shape.setAsBox(half, half, center, 0);
                 FixtureDef fd = new FixtureDef();
@@ -100,7 +104,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float px = pos.x * PPM;
         float py = pos.y * PPM;
-        RectUtil.setRect(dstRect, px, py, GRID_SIZE * cellSize, GRID_SIZE * cellSize);
+        RectUtil.setRect(dstRect, px, py, GRID_SIZE * scaledCellSize, GRID_SIZE * scaledCellSize);
         initBoxes();
     }
 
@@ -137,7 +141,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
-        RectUtil.setRect(dstRect, pos.x * PPM, pos.y * PPM, GRID_SIZE * cellSize, GRID_SIZE * cellSize);
+        RectUtil.setRect(dstRect, pos.x * PPM, pos.y * PPM, GRID_SIZE * scaledCellSize, GRID_SIZE * scaledCellSize);
         initBoxes();
     }
 
@@ -148,13 +152,13 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         float angle = body != null ? body.getAngle() : 0f;
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
-        float baseHalf = cellSize / 2f;
+        float baseHalf = scaledCellSize / 2f;
 
         for (int r = 0; r < GRID_SIZE; r++) {
             for (int c = 0; c < GRID_SIZE; c++) {
                 if (!mask[r][c]) continue;
-                float localX = ((c + 0.5f) - PIVOT) * cellSize;
-                float localY = ((r + 0.5f) - PIVOT) * cellSize;
+                float localX = ((c + 0.5f) - PIVOT) * scaledCellSize;
+                float localY = ((r + 0.5f) - PIVOT) * scaledCellSize;
 
                 float worldX = px + localX * cos - localY * sin;
                 float worldY = py + localX * sin + localY * cos;
@@ -182,7 +186,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         for (int r = 0; r < GRID_SIZE; r++) {
             for (int c = 0; c < GRID_SIZE; c++) {
                 if (!mask[r][c]) continue;
-                float bottom = ((r + 1f) - PIVOT) * cellSize;
+                float bottom = ((r + 1f) - PIVOT) * scaledCellSize;
                 if (bottom > max) max = bottom;
             }
         }
