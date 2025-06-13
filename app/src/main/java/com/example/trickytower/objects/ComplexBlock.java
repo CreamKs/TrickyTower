@@ -25,23 +25,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * ComplexBlock: 테트리스 4x4 그리드 중심 피벗 회전 및 셀 단위 충돌 처리
+ * ComplexBlock: 이미지 픽셀을 이용해 히트박스를 생성하고
+ * 회전 시 이미지와 히트박스가 함께 회전합니다.
  */
 public class ComplexBlock extends Sprite implements IBoxCollidable {
     private static final float PPM = 50f;
-    public static final int GRID_SIZE = 4;
-    private static final float PIVOT = GRID_SIZE / 2f;
-    /** 이미지와 히트박스 크기를 결정하는 비율 */
+    /** 기본 너비를 맞추기 위한 기준 셀 크기 */
+    private static final float DEFAULT_CELLS = 4f;
     private static final float IMAGE_SCALE = 0.8f;
 
     private final ShapeType type;
     private final float cellSize;
-    private final float scaledCellSize;
+    private final float scale;
 
-    // 4x4 그리드 마스크
-    private boolean[][] mask;
+    private static class LocalBox {
+        float cx, cy, halfW, halfH;
+    }
 
-
+    private final List<LocalBox> localBoxes = new ArrayList<>();
     private final List<RectF> boxes = new ArrayList<>();
     private final List<Fixture> fixtures = new ArrayList<>();
     private final Paint paint = new Paint();
@@ -51,6 +52,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         debugPaint.setColor(Color.BLUE);
         debugPaint.setStrokeWidth(2f);
     }
+
     private Body body;
     private float pivotX, pivotY;
 
@@ -58,23 +60,56 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         super(type.resId);
         this.type = type;
         this.cellSize = cellSize;
-        this.scaledCellSize = cellSize * IMAGE_SCALE;
         this.pivotX = x;
         this.pivotY = y;
-
         paint.setFilterBitmap(false);
 
-        mask = new boolean[GRID_SIZE][GRID_SIZE];
-        boolean[][] orig = type.mask;
-        for (int r = 0; r < GRID_SIZE; r++) {
-            System.arraycopy(orig[r], 0, mask[r], 0, GRID_SIZE);
-        }
+        // 셀 크기에 맞춰 이미지 스케일 결정
+        float targetWidth = type.getWidthCells() * cellSize * IMAGE_SCALE;
+        this.scale = targetWidth / bitmap.getWidth();
+        float scaledW = bitmap.getWidth() * scale;
+        float scaledH = bitmap.getHeight() * scale;
+        setPosition(pivotX, pivotY, scaledW, scaledH);
 
-        setPosition(pivotX, pivotY, GRID_SIZE * scaledCellSize, GRID_SIZE * scaledCellSize);
+        buildLocalBoxes();
         initBoxes();
     }
 
-    /** 생성 시 호출: 각 셀에 대응하는 fixture 추가 */
+    /** 비투명 픽셀 영역을 찾아 localBoxes 리스트를 구축 */
+    private void buildLocalBoxes() {
+        localBoxes.clear();
+        int w = bitmap.getWidth();
+        int h = bitmap.getHeight();
+        for (int row = 0; row < h; row++) {
+            int start = -1;
+            for (int col = 0; col < w; col++) {
+                int alpha = (bitmap.getPixel(col, row) >>> 24) & 0xFF;
+                boolean opaque = alpha > 0;
+                if (opaque) {
+                    if (start < 0) start = col;
+                } else if (start >= 0) {
+                    addBox(start, col - 1, row, w, h);
+                    start = -1;
+                }
+            }
+            if (start >= 0) {
+                addBox(start, w - 1, row, w, h);
+            }
+        }
+    }
+
+    private void addBox(int sx, int ex, int row, int imgW, int imgH) {
+        LocalBox b = new LocalBox();
+        float centerXPixel = (sx + ex + 1) / 2f - imgW / 2f;
+        float centerYPixel = (row + 0.5f) - imgH / 2f;
+        b.cx = centerXPixel * scale;
+        b.cy = centerYPixel * scale;
+        b.halfW = (ex - sx + 1) * scale / 2f;
+        b.halfH = scale / 2f;
+        localBoxes.add(b);
+    }
+
+    /** 월드에 물리 바디 생성 */
     public void createPhysicsBody(World world) {
         BodyDef bd = new BodyDef();
         bd.type = BodyType.DYNAMIC;
@@ -82,34 +117,15 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         bd.fixedRotation = true;
         body = world.createBody(bd);
         body.setUserData(this);
-        recreateFixtures();
-    }
-
-    /** 현재 mask에 맞춰 body의 fixture를 모두 새로 만든다 */
-    private void recreateFixtures() {
-        if (body == null) return;
-        // 기존 fixture 제거
-        for (Fixture f : fixtures) {
-            body.destroyFixture(f);
-        }
-        fixtures.clear();
-
-        for (int r = 0; r < GRID_SIZE; r++) {
-            for (int c = 0; c < GRID_SIZE; c++) {
-                if (!mask[r][c]) continue;
-                PolygonShape shape = new PolygonShape();
-                float half = scaledCellSize / 2f / PPM;
-                Vec2 center = new Vec2(
-                        ((c + 0.5f) - PIVOT) * scaledCellSize / PPM,
-                        ((r + 0.5f) - PIVOT) * scaledCellSize / PPM
-                );
-                shape.setAsBox(half, half, center, 0);
-                FixtureDef fd = new FixtureDef();
-                fd.shape = shape;
-                fd.density = 1f;
-                Fixture fixture = body.createFixture(fd);
-                fixtures.add(fixture);
-            }
+        for (LocalBox lb : localBoxes) {
+            PolygonShape shape = new PolygonShape();
+            shape.setAsBox(lb.halfW / PPM, lb.halfH / PPM,
+                    new Vec2(lb.cx / PPM, lb.cy / PPM), 0);
+            FixtureDef fd = new FixtureDef();
+            fd.shape = shape;
+            fd.density = 1f;
+            Fixture f = body.createFixture(fd);
+            fixtures.add(f);
         }
     }
 
@@ -119,13 +135,13 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float px = pos.x * PPM;
         float py = pos.y * PPM;
-        RectUtil.setRect(dstRect, px, py, GRID_SIZE * scaledCellSize, GRID_SIZE * scaledCellSize);
+        RectUtil.setRect(dstRect, px, py, bitmap.getWidth() * scale, bitmap.getHeight() * scale);
         initBoxes();
     }
 
     @Override
     public void draw(Canvas canvas) {
-        // 회전을 Canvas 자체에 적용하여 깨짐 방지
+        if (body == null) return;
         float angleDeg = (float) Math.toDegrees(body.getAngle());
         Vec2 pos = body.getPosition();
         float px = pos.x * PPM;
@@ -135,33 +151,20 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         canvas.drawBitmap(bitmap, null, dstRect, paint);
         canvas.restore();
         if (GameView.drawsDebugStuffs) {
-            for (RectF rect : boxes) {
-                canvas.drawRect(rect, debugPaint);
-            }
+            for (RectF r : boxes) canvas.drawRect(r, debugPaint);
         }
     }
 
-    /** 90° 회전: mask 업데이트 및 body transform */
+    /** 90도 회전 */
     public void rotate90() {
-        // mask 90° 회전
-        boolean[][] newMask = new boolean[GRID_SIZE][GRID_SIZE];
-        for (int r = 0; r < GRID_SIZE; r++) {
-            for (int c = 0; c < GRID_SIZE; c++) {
-                newMask[c][GRID_SIZE - 1 - r] = mask[r][c];
-            }
-        }
-        mask = newMask;
-
-        // 물리 body 회전
+        if (body == null) return;
         Vec2 pos = body.getPosition();
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
-        RectUtil.setRect(dstRect, pos.x * PPM, pos.y * PPM, GRID_SIZE * scaledCellSize, GRID_SIZE * scaledCellSize);
-        recreateFixtures();
         initBoxes();
     }
 
-    /** 180° 회전 */
+    /** 180도 회전 */
     public void rotate180() {
         rotate90();
         rotate90();
@@ -174,27 +177,14 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         float angle = body != null ? body.getAngle() : 0f;
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
-        float baseHalf = scaledCellSize / 2f;
-
-        for (int r = 0; r < GRID_SIZE; r++) {
-            for (int c = 0; c < GRID_SIZE; c++) {
-                if (!mask[r][c]) continue;
-                float localX = ((c + 0.5f) - PIVOT) * scaledCellSize;
-                float localY = ((r + 0.5f) - PIVOT) * scaledCellSize;
-
-                float worldX = px + localX * cos - localY * sin;
-                float worldY = py + localX * sin + localY * cos;
-
-                float half = baseHalf;
-
-                RectF rect = new RectF(
-                        worldX - half,
-                        worldY - half,
-                        worldX + half,
-                        worldY + half
-                );
-                boxes.add(rect);
-            }
+        for (LocalBox lb : localBoxes) {
+            float worldX = px + lb.cx * cos - lb.cy * sin;
+            float worldY = py + lb.cx * sin + lb.cy * cos;
+            boxes.add(new RectF(
+                    worldX - lb.halfW,
+                    worldY - lb.halfH,
+                    worldX + lb.halfW,
+                    worldY + lb.halfH));
         }
     }
 
@@ -202,21 +192,14 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         return boxes;
     }
 
-    /** 현재 mask에서 피벗을 기준으로 가장 아래 셀의 bottom까지의 오프셋(px)을 구한다 */
+    /** 현재 형태의 가장 아래쪽 오프셋(px) 계산 */
     public float getBottomOffset() {
         float max = Float.NEGATIVE_INFINITY;
-        for (int r = 0; r < GRID_SIZE; r++) {
-            for (int c = 0; c < GRID_SIZE; c++) {
-                if (!mask[r][c]) continue;
-                float bottom = ((r + 1f) - PIVOT) * scaledCellSize;
-                if (bottom > max) max = bottom;
-            }
+        for (LocalBox lb : localBoxes) {
+            float bottom = lb.cy + lb.halfH;
+            if (bottom > max) max = bottom;
         }
         return max == Float.NEGATIVE_INFINITY ? 0f : max;
-    }
-
-    public boolean[][] getMask() {
-        return mask;
     }
 
     public Body getBody() {

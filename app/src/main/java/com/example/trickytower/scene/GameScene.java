@@ -79,7 +79,7 @@ public class GameScene extends Scene {
         isFastDropping = false;
         ShapeType type = ShapeType.values()[rand.nextInt(ShapeType.values().length)];
         float startX = Metrics.width/2f;
-        float startY = - GRID_SIZE * CELL_SIZE;
+        float startY = - type.getHeightCells() * CELL_SIZE;
         current = new ComplexBlock(type, startX, startY, CELL_SIZE);
         current.createPhysicsBody(world);
         add(SceneLayer.BLOCK, current);
