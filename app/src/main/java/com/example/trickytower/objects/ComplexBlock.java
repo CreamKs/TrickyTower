@@ -109,6 +109,37 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         localBoxes.add(b);
     }
 
+    /** 현 바디의 모든 피처를 제거 후 다시 생성 */
+    private void recreateFixtures() {
+        if (body == null) return;
+        for (Fixture f : fixtures) {
+            body.destroyFixture(f);
+        }
+        fixtures.clear();
+        for (LocalBox lb : localBoxes) {
+            PolygonShape shape = new PolygonShape();
+            shape.setAsBox(lb.halfW / PPM, lb.halfH / PPM,
+                    new Vec2(lb.cx / PPM, lb.cy / PPM), 0);
+            FixtureDef fd = new FixtureDef();
+            fd.shape = shape;
+            fd.density = 1f;
+            Fixture fixture = body.createFixture(fd);
+            fixtures.add(fixture);
+        }
+    }
+
+    /** localBoxes를 90도 회전시킨다 */
+    private void rotateLocalBoxes90() {
+        for (LocalBox lb : localBoxes) {
+            float oldCx = lb.cx;
+            lb.cx = -lb.cy;
+            lb.cy = oldCx;
+            float oldHalf = lb.halfW;
+            lb.halfW = lb.halfH;
+            lb.halfH = oldHalf;
+        }
+    }
+
     /** 월드에 물리 바디 생성 */
     public void createPhysicsBody(World world) {
         BodyDef bd = new BodyDef();
@@ -161,6 +192,8 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
+        rotateLocalBoxes90();
+        recreateFixtures();
         initBoxes();
     }
 
