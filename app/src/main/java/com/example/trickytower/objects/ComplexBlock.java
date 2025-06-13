@@ -4,9 +4,11 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.Color;
 
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.interfaces.IBoxCollidable;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
+import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
 
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.common.Vec2;
@@ -38,6 +40,12 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
 
     private final List<RectF> boxes = new ArrayList<>();
     private final Paint paint = new Paint();
+    private static final Paint debugPaint = new Paint();
+    static {
+        debugPaint.setStyle(Paint.Style.STROKE);
+        debugPaint.setColor(Color.BLUE);
+        debugPaint.setStrokeWidth(2f);
+    }
     private Body body;
     private float pivotX, pivotY;
 
@@ -107,6 +115,11 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         canvas.rotate(angleDeg, px, py);
         canvas.drawBitmap(bitmap, null, dstRect, paint);
         canvas.restore();
+        if (GameView.drawsDebugStuffs) {
+            for (RectF rect : boxes) {
+                canvas.drawRect(rect, debugPaint);
+            }
+        }
     }
 
     /** 90° 회전: mask 업데이트 및 body transform */
@@ -161,6 +174,19 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
 
     public List<RectF> getCellBoxes() {
         return boxes;
+    }
+
+    /** 현재 mask에서 피벗을 기준으로 가장 아래 셀의 bottom까지의 오프셋(px)을 구한다 */
+    public float getBottomOffset() {
+        float max = Float.NEGATIVE_INFINITY;
+        for (int r = 0; r < GRID_SIZE; r++) {
+            for (int c = 0; c < GRID_SIZE; c++) {
+                if (!mask[r][c]) continue;
+                float bottom = ((r + 1f) - PIVOT) * cellSize;
+                if (bottom > max) max = bottom;
+            }
+        }
+        return max == Float.NEGATIVE_INFINITY ? 0f : max;
     }
 
     public boolean[][] getMask() {

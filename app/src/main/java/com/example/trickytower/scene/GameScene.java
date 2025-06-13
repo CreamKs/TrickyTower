@@ -97,8 +97,8 @@ public class GameScene extends Scene {
         if (current != null) {
             float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks);
             if (!Float.isNaN(contactY)) {
-                float halfH = current.getHeight() / 2f;
-                float centerYPixel = contactY - halfH;
+                float bottomOffset = current.getBottomOffset();
+                float centerYPixel = contactY - bottomOffset;
                 Vec2 pos = current.getBody().getPosition();
                 Body body = current.getBody();
                 body.setLinearVelocity(new Vec2(0, 0));
