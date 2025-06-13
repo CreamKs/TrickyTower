@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        assertEquals("kr.ac.tukorea.ge.scgyong.cookierun", appContext.getPackageName());
+        assertEquals("com.example.trickytower", appContext.getPackageName());
     }
 }

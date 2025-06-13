@@ -28,15 +28,17 @@ public class BlockCollisionHelper {
             return Metrics.height;
         }
         // 2) 쌓인 블록들과 충돌 검사
+        float closestY = Float.NaN;
         for (IBoxCollidable landed : landedBlocks) {
             RectF lr = landed.getCollisionRect();
             float cx = rect.centerX();
             if (cx >= lr.left && cx <= lr.right && bottom >= lr.top) {
-                return lr.top;
+                if (Float.isNaN(closestY) || lr.top > closestY) {
+                    closestY = lr.top;
+                }
             }
         }
-        // 충돌 없음
-        return Float.NaN;
+        return closestY;
     }
 
     /**
