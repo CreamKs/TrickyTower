@@ -72,6 +72,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         setPosition(pivotX, pivotY, scaledW, scaledH);
 
         buildLocalBoxes();
+        updateDimensions();
         initBoxes();
     }
 
@@ -140,6 +141,26 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         }
     }
 
+    /** localBoxes 기준으로 스프라이트의 폭과 높이를 갱신 */
+    private void updateDimensions() {
+        if (localBoxes.isEmpty()) return;
+        float minX = Float.MAX_VALUE, maxX = Float.MIN_VALUE;
+        float minY = Float.MAX_VALUE, maxY = Float.MIN_VALUE;
+        for (LocalBox lb : localBoxes) {
+            float left = lb.cx - lb.halfW;
+            float right = lb.cx + lb.halfW;
+            float top = lb.cy - lb.halfH;
+            float bottom = lb.cy + lb.halfH;
+            if (left < minX) minX = left;
+            if (right > maxX) maxX = right;
+            if (top < minY) minY = top;
+            if (bottom > maxY) maxY = bottom;
+        }
+        float w = maxX - minX;
+        float h = maxY - minY;
+        setPosition(pivotX, pivotY, w, h);
+    }
+
     /** 월드에 물리 바디 생성 */
     public void createPhysicsBody(World world) {
         BodyDef bd = new BodyDef();
@@ -166,7 +187,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         Vec2 pos = body.getPosition();
         float px = pos.x * PPM;
         float py = pos.y * PPM;
-        RectUtil.setRect(dstRect, px, py, bitmap.getWidth() * scale, bitmap.getHeight() * scale);
+        RectUtil.setRect(dstRect, px, py, width, height);
         initBoxes();
     }
 
@@ -193,6 +214,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
         rotateLocalBoxes90();
+        updateDimensions();
         recreateFixtures();
         initBoxes();
     }
