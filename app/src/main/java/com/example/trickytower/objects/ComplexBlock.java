@@ -75,7 +75,6 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         }
         setPosition(x, y, cols * cellSize, rows * cellSize);
         buildLocalBoxes();
-        initBoxes();
     }
 
     private void buildLocalBoxes() {
@@ -111,6 +110,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
             fd.density = 1f;
             body.createFixture(fd);
         }
+        initBoxes();
     }
 
     @Override
