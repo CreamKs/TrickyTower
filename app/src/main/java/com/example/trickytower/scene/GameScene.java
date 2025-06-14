@@ -120,6 +120,7 @@ public class GameScene extends Scene {
         current.createPhysicsBody(world);
         // 새로 생성된 블록은 중력의 영향을 받지 않고 일정 속도로 떨어지도록 설정
         Body body = current.getBody();
+        body.setBullet(true); // 빠른 낙하 시 충돌 누락 방지
         body.setGravityScale(0f);
         body.setLinearVelocity(new Vec2(0, DROP_SPEED));
         add(SceneLayer.BLOCK, current);
@@ -182,7 +183,13 @@ public class GameScene extends Scene {
                 if (Math.abs(dx) > Math.abs(dy) && now - lastMoveTime > MOVE_DELAY_MS) {
                     Vec2 pos = current.getBody().getPosition();
                     float step = (CELL_SIZE / PPM) * (dx > 0 ? 1 : -1);
-                    current.getBody().setTransform(new Vec2(pos.x + step, pos.y), current.getBody().getAngle());
+                    float halfW = current.getWidth() / 2f / PPM;
+                    float newX = pos.x + step;
+                    float minX = halfW;
+                    float maxX = Metrics.width / PPM - halfW;
+                    if (newX < minX) newX = minX;
+                    if (newX > maxX) newX = maxX;
+                    current.getBody().setTransform(new Vec2(newX, pos.y), current.getBody().getAngle());
                     lastMoveTime = now;
                     touchStartX = pts[0];
                 }
