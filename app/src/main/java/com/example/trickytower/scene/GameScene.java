@@ -115,6 +115,11 @@ public class GameScene extends Scene {
         isFastDropping = false;
         ShapeType type = ShapeType.values()[rand.nextInt(ShapeType.values().length)];
         float startX = Metrics.width/2f;
+        if (type == ShapeType.O) {
+            // O 블록은 실제 히트박스가 셀 크기보다 작아 중앙 정렬 시 살짝 왼쪽으로
+            // 치우쳐 보인다. 이를 보정하기 위해 절반의 차이만큼 우측으로 이동한다.
+            startX += (CELL_SIZE * (1f - ComplexBlock.getHitboxScale())) / 2f;
+        }
         float startY = - type.getHeightCells() * CELL_SIZE;
         current = new ComplexBlock(type, startX, startY, CELL_SIZE);
         current.createPhysicsBody(world);
@@ -182,7 +187,8 @@ public class GameScene extends Scene {
                 long now = System.currentTimeMillis();
                 if (Math.abs(dx) > Math.abs(dy) && now - lastMoveTime > MOVE_DELAY_MS) {
                     Vec2 pos = current.getBody().getPosition();
-                    float step = (CELL_SIZE / PPM) * (dx > 0 ? 1 : -1);
+                    float hitStep = CELL_SIZE * ComplexBlock.getHitboxScale();
+                    float step = (hitStep / PPM) * (dx > 0 ? 1 : -1);
                     float halfW = current.getWidth() / 2f / PPM;
                     float newX = pos.x + step;
                     float minX = halfW;

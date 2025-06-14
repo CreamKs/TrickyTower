@@ -33,6 +33,10 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
     private final ShapeType type;
     private final float cellSize;
     private static final float HITBOX_SCALE = 0.9f; // 히트박스 축소 비율
+
+    public static float getHitboxScale() {
+        return HITBOX_SCALE;
+    }
     private final boolean[][] cells;
     private final int rows, cols;
 
