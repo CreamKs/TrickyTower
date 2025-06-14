@@ -283,10 +283,14 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
 
     /** 현재 형태의 가장 아래쪽 오프셋(px) 계산 */
     public float getBottomOffset() {
+        float angle = body != null ? body.getAngle() : 0f;
+        float cos = (float) Math.cos(angle);
+        float sin = (float) Math.sin(angle);
         float max = Float.NEGATIVE_INFINITY;
         for (Vec2[] tri : localTris) {
             for (Vec2 v : tri) {
-                if (v.y > max) max = v.y;
+                float wy = v.x * sin + v.y * cos;
+                if (wy > max) max = wy;
             }
         }
         return max == Float.NEGATIVE_INFINITY ? 0f : max;

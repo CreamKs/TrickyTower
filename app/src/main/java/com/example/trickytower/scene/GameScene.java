@@ -93,6 +93,7 @@ public class GameScene extends Scene {
             Object data = other.getUserData();
             if ("GROUND".equals(data) || data instanceof ComplexBlock) {
                 float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks);
+                if (Float.isNaN(contactY)) return; // 계산 실패 시 무시
                 float bottomOffset = current.getBottomOffset();
                 float centerY = contactY - bottomOffset;
                 body.setLinearVelocity(new Vec2(0, 0));
