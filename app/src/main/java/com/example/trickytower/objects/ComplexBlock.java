@@ -80,28 +80,114 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
 
         int w = bitmap.getWidth();
         int h = bitmap.getHeight();
+        boolean[][] mask = new boolean[h][w];
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int alpha = (bitmap.getPixel(x, y) >>> 24) & 0xFF;
-                if (alpha == 0) continue;
-                float left = (x - w / 2f) * scale;
-                float top = (y - h / 2f) * scale;
-                float right = (x + 1 - w / 2f) * scale;
-                float bottom = (y + 1 - h / 2f) * scale;
-                localBoxes.add(new RectF(left, top, right, bottom));
-                // 두 개의 삼각형으로 쪼개어 등록
-                localTris.add(new Vec2[] {
-                        new Vec2(left, top),
-                        new Vec2(right, top),
-                        new Vec2(right, bottom)
-                });
-                localTris.add(new Vec2[] {
-                        new Vec2(left, top),
-                        new Vec2(right, bottom),
-                        new Vec2(left, bottom)
-                });
+                mask[y][x] = alpha > 0;
             }
         }
+
+        List<Vec2> poly = traceOutline(mask);
+        List<Vec2[]> tris = triangulatePolygon(poly);
+        for (Vec2[] t : tris) {
+            Vec2[] scaled = new Vec2[3];
+            float minX = Float.POSITIVE_INFINITY, minY = Float.POSITIVE_INFINITY;
+            float maxX = Float.NEGATIVE_INFINITY, maxY = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < 3; i++) {
+                float sx = (t[i].x - w / 2f) * scale;
+                float sy = (t[i].y - h / 2f) * scale;
+                scaled[i] = new Vec2(sx, sy);
+                if (sx < minX) minX = sx;
+                if (sy < minY) minY = sy;
+                if (sx > maxX) maxX = sx;
+                if (sy > maxY) maxY = sy;
+            }
+            localTris.add(scaled);
+            localBoxes.add(new RectF(minX, minY, maxX, maxY));
+        }
+    }
+
+    /** Marching Squares 방식으로 외곽선 점들을 추출 */
+    private List<Vec2> traceOutline(boolean[][] mask) {
+        int h = mask.length;
+        int w = mask[0].length;
+        class Edge { int sx, sy, ex, ey; Edge(int sx,int sy,int ex,int ey){this.sx=sx;this.sy=sy;this.ex=ex;this.ey=ey;} }
+        List<Edge> edges = new ArrayList<>();
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                if (!mask[y][x]) continue;
+                if (x == 0 || !mask[y][x-1]) edges.add(new Edge(x, y+1, x, y));
+                if (y == 0 || !mask[y-1][x]) edges.add(new Edge(x, y, x+1, y));
+                if (x == w-1 || !mask[y][x+1]) edges.add(new Edge(x+1, y, x+1, y+1));
+                if (y == h-1 || !mask[y+1][x]) edges.add(new Edge(x+1, y+1, x, y+1));
+            }
+        }
+        if (edges.isEmpty()) return new ArrayList<>();
+        // 연결 구조 만들기
+        java.util.Map<String, Edge> map = new java.util.HashMap<>();
+        for (Edge e : edges) {
+            map.put(e.sx + "," + e.sy, e);
+        }
+        Edge first = edges.get(0);
+        List<Vec2> poly = new ArrayList<>();
+        int cx = first.sx, cy = first.sy;
+        poly.add(new Vec2(cx, cy));
+        while (true) {
+            Edge e = map.remove(cx + "," + cy);
+            if (e == null) break;
+            cx = e.ex; cy = e.ey;
+            poly.add(new Vec2(cx, cy));
+            if (cx == first.sx && cy == first.sy) break;
+        }
+        return poly;
+    }
+
+    /** 다각형을 Ear clipping으로 삼각형 분해 */
+    private static List<Vec2[]> triangulatePolygon(List<Vec2> poly) {
+        List<Vec2[]> result = new ArrayList<>();
+        if (poly.size() < 3) return result;
+        List<Vec2> verts = new ArrayList<>(poly);
+        float area = 0f;
+        for (int i = 0; i < verts.size(); i++) {
+            Vec2 a = verts.get(i);
+            Vec2 b = verts.get((i + 1) % verts.size());
+            area += a.x * b.y - a.y * b.x;
+        }
+        final boolean ccw = area > 0f; // 화면 좌표 기준
+        int guard = 0;
+        while (verts.size() >= 3 && guard++ < 1000) {
+            int n = verts.size();
+            boolean earFound = false;
+            for (int i = 0; i < n; i++) {
+                Vec2 prev = verts.get((i + n - 1) % n);
+                Vec2 curr = verts.get(i);
+                Vec2 next = verts.get((i + 1) % n);
+                float cross = (curr.x - prev.x) * (next.y - prev.y) - (curr.y - prev.y) * (next.x - prev.x);
+                if (ccw ? cross <= 0f : cross >= 0f) continue; // convex check
+                boolean contains = false;
+                for (int j = 0; j < n; j++) {
+                    if (j == i || j == (i + n - 1) % n || j == (i + 1) % n) continue;
+                    if (pointInTriangle(verts.get(j), prev, curr, next)) { contains = true; break; }
+                }
+                if (contains) continue;
+                result.add(new Vec2[] { prev.clone(), curr.clone(), next.clone() });
+                verts.remove(i);
+                earFound = true;
+                break;
+            }
+            if (!earFound) break; // 실패
+        }
+        return result;
+    }
+
+    private static boolean pointInTriangle(Vec2 p, Vec2 a, Vec2 b, Vec2 c) {
+        float ab = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+        float bc = (c.x - b.x) * (p.y - b.y) - (c.y - b.y) * (p.x - b.x);
+        float ca = (a.x - c.x) * (p.y - c.y) - (a.y - c.y) * (p.x - c.x);
+        boolean hasNeg = (ab < 0) || (bc < 0) || (ca < 0);
+        boolean hasPos = (ab > 0) || (bc > 0) || (ca > 0);
+        return !(hasNeg && hasPos);
     }
 
 
