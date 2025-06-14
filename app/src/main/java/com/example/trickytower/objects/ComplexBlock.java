@@ -32,6 +32,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
 
     private final ShapeType type;
     private final float cellSize;
+    private static final float HITBOX_SCALE = 0.9f; // 히트박스 축소 비율
     private final boolean[][] cells;
     private final int rows, cols;
 
@@ -79,15 +80,16 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
 
     private void buildLocalBoxes() {
         localBoxes.clear();
-        float half = cellSize / 2f;
+        float centerHalf = cellSize / 2f;
+        float hitHalf = cellSize * HITBOX_SCALE / 2f;
         float left0 = -cols * cellSize / 2f;
         float top0 = -rows * cellSize / 2f;
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 if (!cells[r][c]) continue;
-                float cx = left0 + c * cellSize + half;
-                float cy = top0 + r * cellSize + half;
-                localBoxes.add(new RectF(cx - half, cy - half, cx + half, cy + half));
+                float cx = left0 + c * cellSize + centerHalf;
+                float cy = top0 + r * cellSize + centerHalf;
+                localBoxes.add(new RectF(cx - hitHalf, cy - hitHalf, cx + hitHalf, cy + hitHalf));
             }
         }
     }
@@ -100,7 +102,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         body = world.createBody(bd);
         body.setUserData(this);
 
-        float half = cellSize / 2f / PPM;
+        float half = cellSize * HITBOX_SCALE / 2f / PPM;
         for (RectF r : localBoxes) {
             PolygonShape shape = new PolygonShape();
             Vec2 center = new Vec2(r.centerX() / PPM, r.centerY() / PPM);
@@ -191,12 +193,17 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         float angle = body.getAngle();
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
+        float half = cellSize / 2f;
+        float left0 = -cols * cellSize / 2f;
+        float top0 = -rows * cellSize / 2f;
         float max = Float.NEGATIVE_INFINITY;
-        for (RectF r : localBoxes) {
-            float[] xs = {r.left, r.right, r.right, r.left};
-            float[] ys = {r.bottom, r.bottom, r.bottom, r.bottom};
-            for (int i = 0; i < 4; i++) {
-                float wy = xs[i] * sin + ys[i] * cos;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if (!cells[r][c]) continue;
+                float cx = left0 + c * cellSize + half;
+                float cy = top0 + r * cellSize + half;
+                float bottom = cy + half;
+                float wy = cx * sin + bottom * cos;
                 if (wy > max) max = wy;
             }
         }
