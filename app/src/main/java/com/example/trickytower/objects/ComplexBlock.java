@@ -101,6 +101,8 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         bd.fixedRotation = false; // 중력에 의해 블록이 회전할 수 있도록 함
         body = world.createBody(bd);
         body.setUserData(this);
+        body.setAngularDamping(2f); // 회전 속도를 서서히 줄여 안정적인 쌓기
+        body.setLinearDamping(0.2f); // 미끄러짐 방지를 위한 감속 적용
 
         float half = cellSize * HITBOX_SCALE / 2f / PPM;
         for (RectF r : localBoxes) {
@@ -110,7 +112,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
             FixtureDef fd = new FixtureDef();
             fd.shape = shape;
             fd.density = 1f;
-            fd.friction = 0.1f; // 약한 마찰력으로 경사면에서 미끄러지도록
+            fd.friction = 0.5f; // 마찰력을 높여 블록이 쉽게 미끄러지지 않도록 함
             body.createFixture(fd);
         }
         initBoxes();
