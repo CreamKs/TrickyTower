@@ -33,6 +33,7 @@ public class GameScene extends Scene {
     private static final Vec2 GRAVITY = new Vec2(0, 9.8f);
     private static final float TIME_STEP = 1/60f;
     private static final int VELOCITY_ITERS = 6, POSITION_ITERS = 2;
+    private static final float DROP_SPEED = 2f; // 블록이 기본적으로 떨어지는 속도 (m/s)
     private static final float FAST_DROP_SPEED = 10f; // m/s
     private static final long MOVE_DELAY_MS = 100;
 
@@ -92,6 +93,10 @@ public class GameScene extends Scene {
         float startY = - type.getHeightCells() * CELL_SIZE;
         current = new ComplexBlock(type, startX, startY, CELL_SIZE);
         current.createPhysicsBody(world);
+        // 새로 생성된 블록은 중력의 영향을 받지 않고 일정 속도로 떨어지도록 설정
+        Body body = current.getBody();
+        body.setGravityScale(0f);
+        body.setLinearVelocity(new Vec2(0, DROP_SPEED));
         add(SceneLayer.BLOCK, current);
         Log.d("GameScene", "spawnBlock: " + type + " at (" + startX + ", " + startY + ")");
     }
@@ -109,6 +114,7 @@ public class GameScene extends Scene {
                 float centerY = contactY - bottomOffset;
                 body.setLinearVelocity(new Vec2(0, 0));
                 body.setAngularVelocity(0f);
+                body.setGravityScale(1f); // 착지 후에는 중력 적용
                 body.setTransform(new Vec2(body.getPosition().x, centerY / PPM), body.getAngle());
                 // 착지 후에도 동적으로 유지하되 속도를 0으로 리셋하여 중력만 적용되도록 한다
                 body.setType(BodyType.DYNAMIC);
@@ -121,8 +127,9 @@ public class GameScene extends Scene {
 
     @Override
     public void update() {
-        if (current != null && isFastDropping) {
-            current.getBody().setLinearVelocity(new Vec2(0, FAST_DROP_SPEED));
+        if (current != null) {
+            float speed = isFastDropping ? FAST_DROP_SPEED : DROP_SPEED;
+            current.getBody().setLinearVelocity(new Vec2(0, speed));
         }
         world.step(TIME_STEP, VELOCITY_ITERS, POSITION_ITERS);
         super.update();
