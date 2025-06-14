@@ -89,6 +89,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         }
 
         List<Vec2> poly = traceOutline(mask);
+        poly = simplifyPolygon(poly, 1f);
         List<Vec2[]> tris = triangulatePolygon(poly);
         for (Vec2[] t : tris) {
             Vec2[] scaled = new Vec2[3];
@@ -108,39 +109,85 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         }
     }
 
-    /** Marching Squares 방식으로 외곽선 점들을 추출 */
+    /**
+     * 8-이웃 경계 추적을 이용해 외곽선을 추출합니다.
+     * 단순한 도형이므로 한 개의 윤곽만 얻어옵니다.
+     */
     private List<Vec2> traceOutline(boolean[][] mask) {
         int h = mask.length;
         int w = mask[0].length;
-        class Edge { int sx, sy, ex, ey; Edge(int sx,int sy,int ex,int ey){this.sx=sx;this.sy=sy;this.ex=ex;this.ey=ey;} }
-        List<Edge> edges = new ArrayList<>();
+        int sx = -1, sy = -1;
+        outer:
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                if (!mask[y][x]) continue;
-                if (x == 0 || !mask[y][x-1]) edges.add(new Edge(x, y+1, x, y));
-                if (y == 0 || !mask[y-1][x]) edges.add(new Edge(x, y, x+1, y));
-                if (x == w-1 || !mask[y][x+1]) edges.add(new Edge(x+1, y, x+1, y+1));
-                if (y == h-1 || !mask[y+1][x]) edges.add(new Edge(x+1, y+1, x, y+1));
+                if (mask[y][x]) { sx = x; sy = y; break outer; }
             }
         }
-        if (edges.isEmpty()) return new ArrayList<>();
-        // 연결 구조 만들기
-        java.util.Map<String, Edge> map = new java.util.HashMap<>();
-        for (Edge e : edges) {
-            map.put(e.sx + "," + e.sy, e);
-        }
-        Edge first = edges.get(0);
         List<Vec2> poly = new ArrayList<>();
-        int cx = first.sx, cy = first.sy;
-        poly.add(new Vec2(cx, cy));
+        if (sx < 0) return poly;
+
+        int[] dx = {1,1,0,-1,-1,-1,0,1};
+        int[] dy = {0,-1,-1,-1,0,1,1,1};
+        int x = sx, y = sy, dir = 0;
+        boolean first = true;
         while (true) {
-            Edge e = map.remove(cx + "," + cy);
-            if (e == null) break;
-            cx = e.ex; cy = e.ey;
-            poly.add(new Vec2(cx, cy));
-            if (cx == first.sx && cy == first.sy) break;
+            poly.add(new Vec2(x, y));
+            boolean found = false;
+            for (int i = 0; i < 8; i++) {
+                int nd = (dir + 6 + i) % 8;
+                int nx = x + dx[nd];
+                int ny = y + dy[nd];
+                if (0 <= nx && nx < w && 0 <= ny && ny < h && mask[ny][nx]) {
+                    x = nx; y = ny; dir = nd; found = true; break;
+                }
+            }
+            if (!found) break;
+            if (x == sx && y == sy && !first) break;
+            first = false;
         }
         return poly;
+    }
+
+    /** Ramer-Douglas-Peucker 알고리즘으로 외곽선 단순화 */
+    private static List<Vec2> simplifyPolygon(List<Vec2> poly, float eps) {
+        if (poly.size() < 3) return poly;
+        List<Vec2> out = new ArrayList<>();
+        rdp(poly, 0, poly.size() - 1, eps * eps, out);
+        out.add(poly.get(poly.size() - 1));
+        return out;
+    }
+
+    private static void rdp(List<Vec2> pts, int s, int e, float eps2, List<Vec2> out) {
+        if (e <= s + 1) {
+            out.add(pts.get(s));
+            return;
+        }
+        Vec2 a = pts.get(s);
+        Vec2 b = pts.get(e);
+        float segX = b.x - a.x;
+        float segY = b.y - a.y;
+        float segLen2 = segX * segX + segY * segY;
+        if (segLen2 == 0f) {
+            out.add(pts.get(s));
+            return;
+        }
+        int index = -1;
+        float maxDist = -1f;
+        for (int i = s + 1; i < e; i++) {
+            Vec2 p = pts.get(i);
+            float t = ((p.x - a.x) * segX + (p.y - a.y) * segY) / segLen2;
+            t = Math.max(0f, Math.min(1f, t));
+            float dx = p.x - (a.x + t * segX);
+            float dy = p.y - (a.y + t * segY);
+            float dist = dx * dx + dy * dy;
+            if (dist > maxDist) { index = i; maxDist = dist; }
+        }
+        if (maxDist > eps2) {
+            rdp(pts, s, index, eps2, out);
+            rdp(pts, index, e, eps2, out);
+        } else {
+            out.add(pts.get(s));
+        }
     }
 
     /** 다각형을 Ear clipping으로 삼각형 분해 */
