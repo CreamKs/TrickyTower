@@ -22,6 +22,8 @@ import org.jbox2d.dynamics.FixtureDef;
 import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.contacts.ContactEdge;
 import org.jbox2d.collision.shapes.PolygonShape;
+import org.jbox2d.dynamics.joints.WeldJoint;
+import org.jbox2d.dynamics.joints.WeldJointDef;
 
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
@@ -40,6 +42,7 @@ public class GameScene extends Scene {
     private World world;
     private ComplexBlock current;
     private final List<ComplexBlock> landedBlocks = new ArrayList<>();
+    private final List<WeldJoint> joints = new ArrayList<>();
     private final Random rand = new Random();
 
     private boolean touchEnabled;
@@ -144,6 +147,17 @@ public class GameScene extends Scene {
                 // 착지 후에도 동적으로 유지하되 속도를 0으로 리셋하여 중력만 적용되도록 한다
                 body.setType(BodyType.DYNAMIC);
                 landedBlocks.add(current);
+
+                // 다른 블록 위에 착지한 경우 약한 응집력을 위한 웰드 조인트 생성
+                if (data instanceof ComplexBlock) {
+                    ComplexBlock landedOn = (ComplexBlock) data;
+                    WeldJointDef jd = new WeldJointDef();
+                    jd.initialize(landedOn.getBody(), body, body.getWorldCenter());
+                    jd.frequencyHz = 2f;  // 조금 흔들리도록 낮은 주파수 설정
+                    jd.dampingRatio = 0.5f;
+                    joints.add((WeldJoint) world.createJoint(jd));
+                }
+
                 spawnBlock();
                 break;
             }
