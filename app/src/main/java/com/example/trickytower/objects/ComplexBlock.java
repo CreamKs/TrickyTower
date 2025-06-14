@@ -5,7 +5,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Color;
-import android.graphics.Path;
 
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.interfaces.IBoxCollidable;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
@@ -23,9 +22,6 @@ import com.example.trickytower.util.RectUtil;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Arrays;
 
 /**
  * ComplexBlock: 이미지 픽셀을 이용해 히트박스를 생성하고
@@ -42,19 +38,10 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
     private final float cellSize;
     private final float scale;
 
-    private static class IntPoint {
-        final int x, y;
-        IntPoint(int x, int y) { this.x = x; this.y = y; }
-        @Override public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            IntPoint p = (IntPoint) o;
-            return x == p.x && y == p.y;
-        }
-        @Override public int hashCode() { return 31 * x + y; }
-    }
-
     private final List<Vec2[]> localTris = new ArrayList<>();
+    // 픽셀 단위 셀의 로컬 박스 목록
+    private final List<RectF> localBoxes = new ArrayList<>();
+    // 월드 좌표계에서 계산된 디버그 박스 목록
     private final List<RectF> boxes = new ArrayList<>();
     private final Paint paint = new Paint();
     private static final Paint debugPaint = new Paint();
@@ -89,107 +76,34 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
     /** 비트맵의 테두리를 따라 삼각형 목록을 생성 */
     private void buildTriangles() {
         localTris.clear();
+        localBoxes.clear();
 
         int w = bitmap.getWidth();
         int h = bitmap.getHeight();
-        boolean[][] mask = new boolean[h][w];
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int alpha = (bitmap.getPixel(x, y) >>> 24) & 0xFF;
-                mask[y][x] = alpha > 0;
+                if (alpha == 0) continue;
+                float left = (x - w / 2f) * scale;
+                float top = (y - h / 2f) * scale;
+                float right = (x + 1 - w / 2f) * scale;
+                float bottom = (y + 1 - h / 2f) * scale;
+                localBoxes.add(new RectF(left, top, right, bottom));
+                // 두 개의 삼각형으로 쪼개어 등록
+                localTris.add(new Vec2[] {
+                        new Vec2(left, top),
+                        new Vec2(right, top),
+                        new Vec2(right, bottom)
+                });
+                localTris.add(new Vec2[] {
+                        new Vec2(left, top),
+                        new Vec2(right, bottom),
+                        new Vec2(left, bottom)
+                });
             }
         }
-
-        Map<IntPoint, IntPoint> edges = new HashMap<>();
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                if (!mask[y][x]) continue;
-                if (x == 0 || !mask[y][x - 1])
-                    edges.put(new IntPoint(x, y), new IntPoint(x, y + 1));
-                if (y == 0 || !mask[y - 1][x])
-                    edges.put(new IntPoint(x, y), new IntPoint(x + 1, y));
-                if (x == w - 1 || !mask[y][x + 1])
-                    edges.put(new IntPoint(x + 1, y), new IntPoint(x + 1, y + 1));
-                if (y == h - 1 || !mask[y + 1][x])
-                    edges.put(new IntPoint(x + 1, y + 1), new IntPoint(x, y + 1));
-            }
-        }
-
-        if (edges.isEmpty()) return;
-        IntPoint start = edges.keySet().iterator().next();
-        List<Vec2> polygon = new ArrayList<>();
-        IntPoint p = start;
-        do {
-            polygon.add(pointToVec2(p, w, h));
-            IntPoint next = edges.remove(p);
-            if (next == null) break;
-            p = next;
-        } while (!p.equals(start) && polygon.size() < edges.size() + 2);
-
-        List<Vec2[]> tris = triangulate(polygon);
-        localTris.addAll(tris);
     }
 
-    private Vec2 pointToVec2(IntPoint p, int imgW, int imgH) {
-        float lx = (p.x - imgW / 2f) * scale;
-        float ly = (p.y - imgH / 2f) * scale;
-        return new Vec2(lx, ly);
-    }
-
-    private static boolean isConvex(Vec2 a, Vec2 b, Vec2 c) {
-        float cross = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-        return cross < 0; // clockwise polygon
-    }
-
-    private static boolean pointInTri(Vec2 p, Vec2 a, Vec2 b, Vec2 c) {
-        float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-        float s = ((a.y - c.y) * (p.x - c.x) + (c.x - a.x) * (p.y - c.y)) / area;
-        float t = ((c.y - b.y) * (p.x - c.x) + (b.x - c.x) * (p.y - c.y)) / area;
-        float u = 1 - s - t;
-        return s >= 0 && t >= 0 && u >= 0;
-    }
-
-    private List<Vec2[]> triangulate(List<Vec2> poly) {
-        List<Vec2[]> result = new ArrayList<>();
-        List<Vec2> verts = new ArrayList<>(poly);
-        if (verts.size() < 3) return result;
-        int n = verts.size();
-        int guard = 0;
-        while (n >= 3 && guard < 1000) { // safety
-            boolean earFound = false;
-            for (int i = 0; i < n; i++) {
-                Vec2 prev = verts.get((i + n - 1) % n);
-                Vec2 curr = verts.get(i);
-                Vec2 next = verts.get((i + 1) % n);
-                if (!isConvex(prev, curr, next)) continue;
-                boolean hasInner = false;
-                for (int j = 0; j < n; j++) {
-                    if (j == i || j == (i + 1) % n || j == (i + n - 1) % n) continue;
-                    if (pointInTri(verts.get(j), prev, curr, next)) {
-                        hasInner = true; break;
-                    }
-                }
-                if (!hasInner) {
-                    result.add(new Vec2[]{prev, curr, next});
-                    verts.remove(i);
-                    n--;
-                    earFound = true;
-                    break;
-                }
-            }
-            if (!earFound) {
-                Vec2 first = verts.get(0);
-                for (int i = 1; i + 1 < n; i++) {
-                    result.add(new Vec2[]{first, verts.get(i), verts.get(i + 1)});
-                }
-                break;
-            }
-            guard++;
-        }
-        return result;
-    }
-
-    /* no-op: fixtures rotate automatically with the body */
 
 
     /** 월드에 물리 바디 생성 */
@@ -262,12 +176,14 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         float angle = body != null ? body.getAngle() : 0f;
         float cos = (float) Math.cos(angle);
         float sin = (float) Math.sin(angle);
-        for (Vec2[] tri : localTris) {
+        for (RectF r : localBoxes) {
+            float[] xs = {r.left, r.right, r.right, r.left};
+            float[] ys = {r.top, r.top, r.bottom, r.bottom};
             float minX = Float.POSITIVE_INFINITY, minY = Float.POSITIVE_INFINITY;
             float maxX = Float.NEGATIVE_INFINITY, maxY = Float.NEGATIVE_INFINITY;
-            for (Vec2 v : tri) {
-                float wx = px + v.x * cos - v.y * sin;
-                float wy = py + v.x * sin + v.y * cos;
+            for (int i = 0; i < 4; i++) {
+                float wx = px + xs[i] * cos - ys[i] * sin;
+                float wy = py + xs[i] * sin + ys[i] * cos;
                 if (wx < minX) minX = wx;
                 if (wy < minY) minY = wy;
                 if (wx > maxX) maxX = wx;
