@@ -1,6 +1,8 @@
 package com.example.trickytower.scene;
 
 import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.util.Log;
 import java.util.ArrayList;
@@ -19,7 +21,7 @@ import org.jbox2d.dynamics.BodyType;
 import org.jbox2d.dynamics.FixtureDef;
 import org.jbox2d.dynamics.World;
 import org.jbox2d.dynamics.contacts.ContactEdge;
-import org.jbox2d.collision.shapes.EdgeShape;
+import org.jbox2d.collision.shapes.PolygonShape;
 
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
@@ -43,6 +45,13 @@ public class GameScene extends Scene {
     private boolean isFastDropping;
     private float touchStartX, touchStartY;
     private long lastMoveTime;
+    private RectF groundBox;
+    private static final Paint debugPaint = new Paint();
+    static {
+        debugPaint.setStyle(Paint.Style.STROKE);
+        debugPaint.setColor(android.graphics.Color.BLUE);
+        debugPaint.setStrokeWidth(2f);
+    }
 
     @Override
     public void onEnter() {
@@ -61,16 +70,18 @@ public class GameScene extends Scene {
     }
 
     private void createGround() {
+        float groundHeight = CELL_SIZE / 2f;
         BodyDef bd = new BodyDef();
         bd.type = BodyType.STATIC;
-        bd.position.set(0, Metrics.height/PPM);
+        bd.position.set(Metrics.width / 2f / PPM, (Metrics.height + groundHeight / 2f) / PPM);
         Body ground = world.createBody(bd);
-        EdgeShape shape = new EdgeShape();
-        shape.set(new Vec2(0, 0), new Vec2(Metrics.width/PPM, 0));
+        PolygonShape shape = new PolygonShape();
+        shape.setAsBox(Metrics.width / 2f / PPM, groundHeight / 2f / PPM);
         FixtureDef fd = new FixtureDef();
         fd.shape = shape;
         ground.createFixture(fd);
         ground.setUserData("GROUND");
+        groundBox = new RectF(0, Metrics.height, Metrics.width, Metrics.height + groundHeight);
     }
 
     private void spawnBlock() {
@@ -163,5 +174,8 @@ public class GameScene extends Scene {
         super.draw(canvas);
         for (ComplexBlock b : landedBlocks) b.draw(canvas);
         if (current != null) current.draw(canvas);
+        if (groundBox != null && kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView.drawsDebugStuffs) {
+            canvas.drawRect(groundBox, debugPaint);
+        }
     }
 }

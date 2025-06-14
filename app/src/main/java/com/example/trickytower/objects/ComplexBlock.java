@@ -98,7 +98,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         BodyDef bd = new BodyDef();
         bd.type = BodyType.DYNAMIC;
         bd.position.set(x / PPM, y / PPM);
-        bd.fixedRotation = true;
+        bd.fixedRotation = false; // 중력에 의해 블록이 회전할 수 있도록 함
         body = world.createBody(bd);
         body.setUserData(this);
 
