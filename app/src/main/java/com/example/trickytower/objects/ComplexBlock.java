@@ -120,6 +120,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
     public void update() {
         if (body == null) return;
         Vec2 pos = body.getPosition();
+        updateDimensions();
         RectUtil.setRect(dstRect, pos.x * PPM, pos.y * PPM, width, height);
         initBoxes();
     }
@@ -149,11 +150,24 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         }
     }
 
+    private void updateDimensions() {
+        float angle = body.getAngle();
+        int quarter = Math.round(angle / ((float)Math.PI / 2)) % 4;
+        if (quarter % 2 == 0) {
+            width = cols * cellSize;
+            height = rows * cellSize;
+        } else {
+            width = rows * cellSize;
+            height = cols * cellSize;
+        }
+    }
+
     public void rotate90() {
         if (body == null) return;
         Vec2 pos = body.getPosition();
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
+        updateDimensions();
         initBoxes();
     }
 

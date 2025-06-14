@@ -92,6 +92,9 @@ public class GameScene extends Scene {
         float startY = - type.getHeightCells() * CELL_SIZE;
         current = new ComplexBlock(type, startX, startY, CELL_SIZE);
         current.createPhysicsBody(world);
+        // 중력의 영향을 받기 시작할 때 속도를 초기화한다
+        current.getBody().setLinearVelocity(new Vec2(0, 0));
+        current.getBody().setAngularVelocity(0);
         add(SceneLayer.BLOCK, current);
         Log.d("GameScene", "spawnBlock: " + type + " at (" + startX + ", " + startY + ")");
     }
