@@ -1,8 +1,6 @@
 package com.example.trickytower.scene;
 
 import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.RectF;
 import android.view.MotionEvent;
 import android.util.Log;
 import java.util.ArrayList;
@@ -20,15 +18,14 @@ import org.jbox2d.dynamics.BodyDef;
 import org.jbox2d.dynamics.BodyType;
 import org.jbox2d.dynamics.FixtureDef;
 import org.jbox2d.dynamics.World;
-import org.jbox2d.dynamics.contacts.ContactEdge;
-import org.jbox2d.collision.shapes.PolygonShape;
+import org.jbox2d.collision.shapes.EdgeShape;
 
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
 
 public class GameScene extends Scene {
-    private static final float CELL_SIZE = 40f;
+    private static final float CELL_SIZE = 50f;
     private static final float PPM = 50f;
     private static final Vec2 GRAVITY = new Vec2(0, 9.8f);
     private static final float TIME_STEP = 1/60f;
@@ -45,13 +42,6 @@ public class GameScene extends Scene {
     private boolean isFastDropping;
     private float touchStartX, touchStartY;
     private long lastMoveTime;
-    private RectF groundBox;
-    private static final Paint debugPaint = new Paint();
-    static {
-        debugPaint.setStyle(Paint.Style.STROKE);
-        debugPaint.setColor(android.graphics.Color.BLUE);
-        debugPaint.setStrokeWidth(2f);
-    }
 
     @Override
     public void onEnter() {
@@ -70,18 +60,15 @@ public class GameScene extends Scene {
     }
 
     private void createGround() {
-        float groundHeight = CELL_SIZE / 2f;
         BodyDef bd = new BodyDef();
         bd.type = BodyType.STATIC;
-        bd.position.set(Metrics.width / 2f / PPM, (Metrics.height + groundHeight / 2f) / PPM);
+        bd.position.set(0, Metrics.height/PPM);
         Body ground = world.createBody(bd);
-        PolygonShape shape = new PolygonShape();
-        shape.setAsBox(Metrics.width / 2f / PPM, groundHeight / 2f / PPM);
+        EdgeShape shape = new EdgeShape();
+        shape.set(new Vec2(0, 0), new Vec2(Metrics.width/PPM, 0));
         FixtureDef fd = new FixtureDef();
         fd.shape = shape;
         ground.createFixture(fd);
-        ground.setUserData("GROUND");
-        groundBox = new RectF(0, Metrics.height, Metrics.width, Metrics.height + groundHeight);
     }
 
     private void spawnBlock() {
@@ -89,36 +76,11 @@ public class GameScene extends Scene {
         isFastDropping = false;
         ShapeType type = ShapeType.values()[rand.nextInt(ShapeType.values().length)];
         float startX = Metrics.width/2f;
-        float startY = - type.getHeightCells() * CELL_SIZE;
+        float startY = - GRID_SIZE * CELL_SIZE;
         current = new ComplexBlock(type, startX, startY, CELL_SIZE);
         current.createPhysicsBody(world);
-        // 중력의 영향을 받기 시작할 때 속도를 초기화한다
-        current.getBody().setLinearVelocity(new Vec2(0, 0));
-        current.getBody().setAngularVelocity(0);
         add(SceneLayer.BLOCK, current);
         Log.d("GameScene", "spawnBlock: " + type + " at (" + startX + ", " + startY + ")");
-    }
-
-    private void checkForLanding() {
-        Body body = current.getBody();
-        for (ContactEdge ce = body.getContactList(); ce != null; ce = ce.next) {
-            if (!ce.contact.isTouching()) continue;
-            Body other = ce.other;
-            Object data = other.getUserData();
-            if ("GROUND".equals(data) || data instanceof ComplexBlock) {
-                float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks);
-                if (Float.isNaN(contactY)) return; // 계산 실패 시 무시
-                float bottomOffset = current.getBottomOffset();
-                float centerY = contactY - bottomOffset;
-                body.setLinearVelocity(new Vec2(0, 0));
-                // 블록을 계속 동적으로 유지하여 중력의 영향을 받게 한다
-                body.setType(BodyType.DYNAMIC);
-                body.setTransform(new Vec2(body.getPosition().x, centerY / PPM), body.getAngle());
-                landedBlocks.add(current);
-                spawnBlock();
-                break;
-            }
-        }
     }
 
     @Override
@@ -131,7 +93,22 @@ public class GameScene extends Scene {
         if (current != null) current.update();
         for (ComplexBlock b : landedBlocks) b.update();
 
-        if (current != null) checkForLanding();
+        if (current != null) {
+            float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks);
+            if (!Float.isNaN(contactY)) {
+                float halfH = GRID_SIZE * CELL_SIZE / 2f;
+                float centerYPixel = contactY - halfH;
+                Vec2 pos = current.getBody().getPosition();
+                Body body = current.getBody();
+                // 고정 블록이 될 때 이동 및 회전 속도를 모두 0으로 초기화한다
+                body.setLinearVelocity(new Vec2(0, 0));
+                body.setAngularVelocity(0);
+                body.setType(BodyType.STATIC);
+                body.setTransform(new Vec2(pos.x, centerYPixel/PPM), body.getAngle());
+                landedBlocks.add(current);
+                spawnBlock();
+            }
+        }
     }
 
     @Override
@@ -177,8 +154,5 @@ public class GameScene extends Scene {
         super.draw(canvas);
         for (ComplexBlock b : landedBlocks) b.draw(canvas);
         if (current != null) current.draw(canvas);
-        if (groundBox != null && kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView.drawsDebugStuffs) {
-            canvas.drawRect(groundBox, debugPaint);
-        }
     }
 }

@@ -10,8 +10,6 @@ import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
  * BlockCollisionHelper: 셀 단위 충돌 감지
  */
 public class BlockCollisionHelper {
-    private static final float EPSILON = 1f; // 착지 판정 감도를 높이기 위한 여유값
-
     /**
      * 현재 블록이 충돌할 Y 좌표(픽셀 단위) 반환
      * NaN이면 충돌 없음
@@ -22,16 +20,15 @@ public class BlockCollisionHelper {
         for (RectF cell : cells) {
             float bottom = cell.bottom;
             // 바닥 충돌
-            if (bottom >= Metrics.height - EPSILON) {
+            if (bottom >= Metrics.height) {
                 contactY = Float.isNaN(contactY) ? Metrics.height : Math.min(contactY, Metrics.height);
             }
             // 이미 착지한 블록의 각 셀과 비교
             for (ComplexBlock landed : landedBlocks) {
                 for (RectF landedCell : landed.getCellBoxes()) {
-                    // 가로 범위가 겹치면서 현재 셀의 아래쪽이 상대 셀 위쪽보다 약간만 아래에 있어도
-                    // 착지로 인식하도록 여유값(EPSILON)을 적용한다
+                    // 가로 범위 겹침 && landedCell.top이 현재 cell.bottom 아래
                     if (landedCell.left < cell.right && landedCell.right > cell.left
-                            && bottom >= landedCell.top - EPSILON && cell.top <= landedCell.top + EPSILON) {
+                            && landedCell.top >= bottom) {
                         contactY = Float.isNaN(contactY)
                                 ? landedCell.top
                                 : Math.min(contactY, landedCell.top);

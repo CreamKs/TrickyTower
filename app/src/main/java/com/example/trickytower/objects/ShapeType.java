@@ -1,60 +1,60 @@
 package com.example.trickytower.objects;
 
-import android.graphics.Color;
+import com.example.trickytower.R;
 
 /**
  * 7가지 테트로미노 블록 타입을 4×4 매트릭스 형태로 정의합니다.
  * true = 블록 셀, false = 빈 칸.
  */
 public enum ShapeType {
-    I(Color.CYAN, new boolean[][] {
+    I(R.drawable.i_block, new boolean[][] {
         {false, false, false, false},
         { true,  true,  true,  true},
         {false, false, false, false},
         {false, false, false, false}
     }),
-    J(Color.BLUE, new boolean[][] {
+    J(R.drawable.j_block, new boolean[][] {
         { true, false, false, false},
         { true,  true,  true, false},
         {false, false, false, false},
         {false, false, false, false}
     }),
-    L(0xFFFFA500, new boolean[][] {
+    L(R.drawable.l_block, new boolean[][] {
         {false, false,  true, false},
         { true,  true,  true, false},
         {false, false, false, false},
         {false, false, false, false}
     }),
-    O(Color.YELLOW, new boolean[][] {
+    O(R.drawable.o_block, new boolean[][] {
         {false,  true,  true, false},
         {false,  true,  true, false},
         {false, false, false, false},
         {false, false, false, false}
     }),
-    S(Color.GREEN, new boolean[][] {
+    S(R.drawable.s_block, new boolean[][] {
         {false,  true,  true, false},
         { true,  true, false, false},
         {false, false, false, false},
         {false, false, false, false}
     }),
-    T(0xFF800080, new boolean[][] {
+    T(R.drawable.t_block, new boolean[][] {
         {false,  true, false, false},
         { true,  true,  true, false},
         {false, false, false, false},
         {false, false, false, false}
     }),
-    Z(Color.RED, new boolean[][] {
+    Z(R.drawable.z_block, new boolean[][] {
         { true,  true, false, false},
         {false,  true,  true, false},
         {false, false, false, false},
         {false, false, false, false}
     });
 
-    public final int color;
+    public final int resId;
     public final boolean[][] mask;
 
-    ShapeType(int color, boolean[][] mask) {
-        this.color = color;
+    ShapeType(int resId, boolean[][] mask) {
+        this.resId = resId;
         this.mask = mask;
     }
 

@@ -1,13 +1,12 @@
 package com.example.trickytower.objects;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.graphics.Color;
 
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.interfaces.IBoxCollidable;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
-import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
 
 import org.jbox2d.collision.shapes.PolygonShape;
 import org.jbox2d.common.Vec2;
@@ -23,180 +22,112 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * ComplexBlock: 이미지 대신 기본 도형을 사용하여 테트로미노를 그립니다.
- * 각 셀에 맞는 히트박스를 생성해 회전 시에도 모양이 유지됩니다.
+ * ComplexBlock: 테트리스 4x4 그리드 중심 피벗 회전 및 셀 단위 충돌 처리
  */
 public class ComplexBlock extends Sprite implements IBoxCollidable {
     private static final float PPM = 50f;
     public static final int GRID_SIZE = 4;
-
     private final ShapeType type;
     private final float cellSize;
-    private static final float HITBOX_SCALE = 0.9f; // 히트박스 축소 비율
-    private final boolean[][] cells;
-    private final int rows, cols;
-
-    private final List<RectF> localBoxes = new ArrayList<>();
+    private boolean[][] mask;  // 4x4 그리드
     private final List<RectF> boxes = new ArrayList<>();
-    private final Paint fillPaint = new Paint();
-    private static final Paint debugPaint = new Paint();
-    static {
-        debugPaint.setStyle(Paint.Style.STROKE);
-        debugPaint.setColor(Color.BLUE);
-        debugPaint.setStrokeWidth(2f);
-    }
-
+    private final Paint paint = new Paint();
     private Body body;
 
     public ComplexBlock(ShapeType type, float x, float y, float cellSize) {
-        super(0); // 이미지 사용 안 함
+        super(type.resId, x, y, cellSize * GRID_SIZE, cellSize * GRID_SIZE);
         this.type = type;
         this.cellSize = cellSize;
-        this.fillPaint.setColor(type.color);
-
-        // 마스크의 실제 영역 계산
-        int minR = GRID_SIZE, minC = GRID_SIZE, maxR = -1, maxC = -1;
+        paint.setFilterBitmap(false);
+        // mask 초기화 (4x4)
+        mask = new boolean[GRID_SIZE][GRID_SIZE];
+        boolean[][] orig = type.mask;
         for (int r = 0; r < GRID_SIZE; r++) {
-            for (int c = 0; c < GRID_SIZE; c++) {
-                if (type.mask[r][c]) {
-                    if (r < minR) minR = r;
-                    if (c < minC) minC = c;
-                    if (r > maxR) maxR = r;
-                    if (c > maxC) maxC = c;
-                }
-            }
+            System.arraycopy(orig[r], 0, mask[r], 0, GRID_SIZE);
         }
-        rows = maxR - minR + 1;
-        cols = maxC - minC + 1;
-        cells = new boolean[rows][cols];
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                cells[r][c] = type.mask[minR + r][minC + c];
-            }
-        }
-        setPosition(x, y, cols * cellSize, rows * cellSize);
-        buildLocalBoxes();
+        initBoxes();
     }
 
-    private void buildLocalBoxes() {
-        localBoxes.clear();
-        float centerHalf = cellSize / 2f;
-        float hitHalf = cellSize * HITBOX_SCALE / 2f;
-        float left0 = -cols * cellSize / 2f;
-        float top0 = -rows * cellSize / 2f;
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                if (!cells[r][c]) continue;
-                float cx = left0 + c * cellSize + centerHalf;
-                float cy = top0 + r * cellSize + centerHalf;
-                localBoxes.add(new RectF(cx - hitHalf, cy - hitHalf, cx + hitHalf, cy + hitHalf));
-            }
-        }
-    }
-
+    /** 생성 시 호출: 각 셀에 대응하는 fixture 추가 */
     public void createPhysicsBody(World world) {
         BodyDef bd = new BodyDef();
         bd.type = BodyType.DYNAMIC;
         bd.position.set(x / PPM, y / PPM);
-        bd.fixedRotation = false; // 중력에 의해 블록이 회전할 수 있도록 함
+        bd.fixedRotation = false;
         body = world.createBody(bd);
-        body.setUserData(this);
-
-        float half = cellSize * HITBOX_SCALE / 2f / PPM;
-        for (RectF r : localBoxes) {
-            PolygonShape shape = new PolygonShape();
-            Vec2 center = new Vec2(r.centerX() / PPM, r.centerY() / PPM);
-            shape.setAsBox(half, half, center, 0);
-            FixtureDef fd = new FixtureDef();
-            fd.shape = shape;
-            fd.density = 1f;
-            fd.friction = 0.1f; // 약한 마찰력으로 경사면에서 미끄러지도록
-            body.createFixture(fd);
+        for (int r = 0; r < GRID_SIZE; r++) {
+            for (int c = 0; c < GRID_SIZE; c++) {
+                if (!mask[r][c]) continue;
+                PolygonShape shape = new PolygonShape();
+                float half = cellSize / 2f / PPM;
+                // 4x4 피벗(중앙) 기준 상대 좌표
+                Vec2 center = new Vec2(
+                    ((c + 0.5f) - GRID_SIZE / 2f) * cellSize / PPM,
+                    ((r + 0.5f) - GRID_SIZE / 2f) * cellSize / PPM
+                );
+                shape.setAsBox(half, half, center, 0);
+                FixtureDef fd = new FixtureDef();
+                fd.shape = shape;
+                fd.density = 1f;
+                body.createFixture(fd);
+            }
         }
-        initBoxes();
     }
 
     @Override
     public void update() {
         if (body == null) return;
         Vec2 pos = body.getPosition();
-        updateDimensions();
-        RectUtil.setRect(dstRect, pos.x * PPM, pos.y * PPM, width, height);
+        float centerX = pos.x * PPM;
+        float centerY = pos.y * PPM;
+        // dstRect를 body 위치와 크기에 맞춰 설정
+        RectUtil.setRect(dstRect, centerX, centerY, cellSize * GRID_SIZE, cellSize * GRID_SIZE);
         initBoxes();
     }
 
     @Override
     public void draw(Canvas canvas) {
-        if (body == null) return;
-        Vec2 pos = body.getPosition();
+        // 회전을 Canvas 자체에 적용하여 깨짐 방지
         float angleDeg = (float) Math.toDegrees(body.getAngle());
-        float px = pos.x * PPM;
-        float py = pos.y * PPM;
+        float px = dstRect.centerX();
+        float py = dstRect.centerY();
         canvas.save();
         canvas.rotate(angleDeg, px, py);
-        float left0 = px - width / 2f;
-        float top0 = py - height / 2f;
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                if (!cells[r][c]) continue;
-                float left = left0 + c * cellSize;
-                float top = top0 + r * cellSize;
-                canvas.drawRect(left, top, left + cellSize, top + cellSize, fillPaint);
+        canvas.drawBitmap(bitmap, null, dstRect, paint);
+        canvas.restore();
+    }
+
+    /** 90° 회전: mask 업데이트 및 body transform */
+    public void rotate90() {
+        // mask 90° 회전
+        boolean[][] newMask = new boolean[GRID_SIZE][GRID_SIZE];
+        for (int r = 0; r < GRID_SIZE; r++) {
+            for (int c = 0; c < GRID_SIZE; c++) {
+                newMask[c][GRID_SIZE - 1 - r] = mask[r][c];
             }
         }
-        canvas.restore();
-        if (GameView.drawsDebugStuffs) {
-            for (RectF r : boxes) canvas.drawRect(r, debugPaint);
-        }
-    }
-
-    private void updateDimensions() {
-        float angle = body.getAngle();
-        int quarter = Math.round(angle / ((float)Math.PI / 2)) % 4;
-        if (quarter % 2 == 0) {
-            width = cols * cellSize;
-            height = rows * cellSize;
-        } else {
-            width = rows * cellSize;
-            height = cols * cellSize;
-        }
-    }
-
-    public void rotate90() {
-        if (body == null) return;
+        mask = newMask;
+        // 물리 body 회전
         Vec2 pos = body.getPosition();
         float newAngle = body.getAngle() + (float) (Math.PI / 2);
         body.setTransform(pos, newAngle);
-        updateDimensions();
-        initBoxes();
-    }
-
-    public void rotate180() {
-        rotate90();
-        rotate90();
     }
 
     private void initBoxes() {
         boxes.clear();
-        float px = body.getPosition().x * PPM;
-        float py = body.getPosition().y * PPM;
-        float angle = body.getAngle();
-        float cos = (float) Math.cos(angle);
-        float sin = (float) Math.sin(angle);
-        for (RectF r : localBoxes) {
-            float[] xs = {r.left, r.right, r.right, r.left};
-            float[] ys = {r.top, r.top, r.bottom, r.bottom};
-            float minX = Float.POSITIVE_INFINITY, minY = Float.POSITIVE_INFINITY;
-            float maxX = Float.NEGATIVE_INFINITY, maxY = Float.NEGATIVE_INFINITY;
-            for (int i = 0; i < 4; i++) {
-                float wx = px + xs[i] * cos - ys[i] * sin;
-                float wy = py + xs[i] * sin + ys[i] * cos;
-                if (wx < minX) minX = wx;
-                if (wy < minY) minY = wy;
-                if (wx > maxX) maxX = wx;
-                if (wy > maxY) maxY = wy;
+        float left0 = dstRect.left;
+        float top0 = dstRect.top;
+        for (int r = 0; r < GRID_SIZE; r++) {
+            for (int c = 0; c < GRID_SIZE; c++) {
+                if (mask[r][c]) {
+                    boxes.add(new RectF(
+                        left0 + c * cellSize,
+                        top0 + r * cellSize,
+                        left0 + (c + 1) * cellSize,
+                        top0 + (r + 1) * cellSize
+                    ));
+                }
             }
-            boxes.add(new RectF(minX, minY, maxX, maxY));
         }
     }
 
@@ -204,25 +135,8 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
         return boxes;
     }
 
-    public float getBottomOffset() {
-        float angle = body.getAngle();
-        float cos = (float) Math.cos(angle);
-        float sin = (float) Math.sin(angle);
-        float half = cellSize / 2f;
-        float left0 = -cols * cellSize / 2f;
-        float top0 = -rows * cellSize / 2f;
-        float max = Float.NEGATIVE_INFINITY;
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                if (!cells[r][c]) continue;
-                float cx = left0 + c * cellSize + half;
-                float cy = top0 + r * cellSize + half;
-                float bottom = cy + half;
-                float wy = cx * sin + bottom * cos;
-                if (wy > max) max = wy;
-            }
-        }
-        return max == Float.NEGATIVE_INFINITY ? 0f : max;
+    public boolean[][] getMask() {
+        return mask;
     }
 
     public Body getBody() {
