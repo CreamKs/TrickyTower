@@ -47,6 +47,8 @@ public class GameScene extends Scene {
     private float touchStartX, touchStartY;
     private long lastMoveTime;
     private RectF groundBox;
+    private RectF leftWallBox;
+    private RectF rightWallBox;
     private static final Paint debugPaint = new Paint();
     static {
         debugPaint.setStyle(Paint.Style.STROKE);
@@ -83,6 +85,29 @@ public class GameScene extends Scene {
         ground.createFixture(fd);
         ground.setUserData("GROUND");
         groundBox = new RectF(0, Metrics.height, Metrics.width, Metrics.height + groundHeight);
+
+        // 양쪽 벽 생성
+        float wallWidth = CELL_SIZE / 2f;
+        BodyDef wallBd = new BodyDef();
+        wallBd.type = BodyType.STATIC;
+        // 왼쪽 벽
+        wallBd.position.set(-wallWidth / 2f / PPM, Metrics.height / 2f / PPM);
+        Body leftWall = world.createBody(wallBd);
+        PolygonShape wallShape = new PolygonShape();
+        wallShape.setAsBox(wallWidth / 2f / PPM, Metrics.height / 2f / PPM);
+        FixtureDef wallFd = new FixtureDef();
+        wallFd.shape = wallShape;
+        leftWall.createFixture(wallFd);
+        leftWall.setUserData("WALL");
+
+        // 오른쪽 벽
+        wallBd.position.set((Metrics.width + wallWidth / 2f) / PPM, Metrics.height / 2f / PPM);
+        Body rightWall = world.createBody(wallBd);
+        rightWall.createFixture(wallFd);
+        rightWall.setUserData("WALL");
+
+        leftWallBox = new RectF(-wallWidth, 0, 0, Metrics.height);
+        rightWallBox = new RectF(Metrics.width, 0, Metrics.width + wallWidth, Metrics.height);
     }
 
     private void spawnBlock() {
@@ -184,6 +209,8 @@ public class GameScene extends Scene {
         if (current != null) current.draw(canvas);
         if (groundBox != null && kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView.drawsDebugStuffs) {
             canvas.drawRect(groundBox, debugPaint);
+            if (leftWallBox != null) canvas.drawRect(leftWallBox, debugPaint);
+            if (rightWallBox != null) canvas.drawRect(rightWallBox, debugPaint);
         }
     }
 }
