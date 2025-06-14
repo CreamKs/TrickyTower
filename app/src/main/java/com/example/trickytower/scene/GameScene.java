@@ -27,7 +27,6 @@ import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
 public class GameScene extends Scene {
     private static final float CELL_SIZE = 50f;
     private static final float PPM = 50f;
-    private static final Vec2 GRAVITY = new Vec2(0, 9.8f);
     private static final float TIME_STEP = 1/60f;
     private static final int VELOCITY_ITERS = 6, POSITION_ITERS = 2;
     private static final float FAST_DROP_SPEED = 10f; // m/s
@@ -76,7 +75,7 @@ public class GameScene extends Scene {
         isFastDropping = false;
         ShapeType type = ShapeType.values()[rand.nextInt(ShapeType.values().length)];
         float startX = Metrics.width/2f;
-        float startY = - GRID_SIZE * CELL_SIZE;
+        float startY = - ComplexBlock.GRID_SIZE * CELL_SIZE;
         current = new ComplexBlock(type, startX, startY, CELL_SIZE);
         current.createPhysicsBody(world);
         add(SceneLayer.BLOCK, current);
@@ -96,7 +95,7 @@ public class GameScene extends Scene {
         if (current != null) {
             float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks);
             if (!Float.isNaN(contactY)) {
-                float halfH = GRID_SIZE * CELL_SIZE / 2f;
+                float halfH = ComplexBlock.GRID_SIZE * CELL_SIZE / 2f;
                 float centerYPixel = contactY - halfH;
                 Vec2 pos = current.getBody().getPosition();
                 Body body = current.getBody();
