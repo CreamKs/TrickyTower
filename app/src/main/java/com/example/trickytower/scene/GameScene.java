@@ -108,9 +108,10 @@ public class GameScene extends Scene {
                 float bottomOffset = current.getBottomOffset();
                 float centerY = contactY - bottomOffset;
                 body.setLinearVelocity(new Vec2(0, 0));
-                // 블록을 계속 동적으로 유지하여 중력의 영향을 받게 한다
-                body.setType(BodyType.DYNAMIC);
+                body.setAngularVelocity(0f);
                 body.setTransform(new Vec2(body.getPosition().x, centerY / PPM), body.getAngle());
+                // 착지 후에도 동적으로 유지하되 속도를 0으로 리셋하여 중력만 적용되도록 한다
+                body.setType(BodyType.DYNAMIC);
                 landedBlocks.add(current);
                 spawnBlock();
                 break;
