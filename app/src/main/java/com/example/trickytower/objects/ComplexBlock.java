@@ -110,6 +110,7 @@ public class ComplexBlock extends Sprite implements IBoxCollidable {
             FixtureDef fd = new FixtureDef();
             fd.shape = shape;
             fd.density = 1f;
+            fd.friction = 0.1f; // 약한 마찰력으로 경사면에서 미끄러지도록
             body.createFixture(fd);
         }
         initBoxes();

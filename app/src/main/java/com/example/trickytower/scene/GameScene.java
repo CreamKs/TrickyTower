@@ -97,7 +97,8 @@ public class GameScene extends Scene {
                 float bottomOffset = current.getBottomOffset();
                 float centerY = contactY - bottomOffset;
                 body.setLinearVelocity(new Vec2(0, 0));
-                body.setType(BodyType.STATIC);
+                // 블록을 계속 동적으로 유지하여 중력의 영향을 받게 한다
+                body.setType(BodyType.DYNAMIC);
                 body.setTransform(new Vec2(body.getPosition().x, centerY / PPM), body.getAngle());
                 landedBlocks.add(current);
                 spawnBlock();
