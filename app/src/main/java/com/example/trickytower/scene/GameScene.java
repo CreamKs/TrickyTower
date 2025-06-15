@@ -2,6 +2,7 @@ package com.example.trickytower.scene;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Color;
 import android.graphics.RectF;
 import android.view.MotionEvent;
 import java.util.ArrayList;
@@ -54,6 +55,14 @@ public class GameScene extends Scene {
     private RectF goalBox;
     private RectF goalDrawBox;
     private boolean isEnding;
+    private String resultText;
+    private static final Paint resultPaint = new Paint();
+    static {
+        resultPaint.setColor(Color.WHITE);
+        resultPaint.setTextAlign(Paint.Align.CENTER);
+        resultPaint.setTextSize(120f);
+        resultPaint.setAntiAlias(true);
+    }
 
     private static final int[] BG_IMAGES = {
             R.drawable.hnesis,
@@ -328,6 +337,7 @@ public class GameScene extends Scene {
     private void stageClear() {
         if (isEnding) return;
         isEnding = true;
+        resultText = "Clear";
         Sound.stopMusic();
         Sound.playAndRun(R.raw.victory, mp -> GameView.view.changeScene(new TitleScene()));
     }
@@ -335,6 +345,7 @@ public class GameScene extends Scene {
     private void stageFail() {
         if (isEnding) return;
         isEnding = true;
+        resultText = "Fail";
         Sound.stopMusic();
         Sound.playAndRun(R.raw.failed, mp -> GameView.view.changeScene(new TitleScene()));
     }
@@ -427,6 +438,9 @@ public class GameScene extends Scene {
             canvas.drawRect(platformBox, platformPaint);
         }
         // goal 이미지는 별도 오브젝트로 그린다
+        if (resultText != null) {
+            canvas.drawText(resultText, Metrics.width / 2f, Metrics.height / 2f, resultPaint);
+        }
     }
 
     @Override
