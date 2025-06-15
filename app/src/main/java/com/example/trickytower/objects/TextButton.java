@@ -56,6 +56,7 @@ public class TextButton implements IGameObject, ITouchable {
             captures = true;
             return listener.onTouch(true);
         } else if (action == MotionEvent.ACTION_UP) {
+            if (!captures) return false;
             captures = false;
             return listener.onTouch(false);
         }
