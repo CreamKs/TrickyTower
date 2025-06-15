@@ -1,10 +1,9 @@
 package com.example.trickytower.scene;
 
-import com.example.trickytower.R;
 import com.example.trickytower.objects.DimmedScreen;
+import com.example.trickytower.objects.TextButton;
 import com.example.trickytower.scene.TitleScene;
 
-import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Button;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
@@ -27,8 +26,8 @@ public class PauseScene extends Scene {
         float btnW = 220f;
         float btnH = 90f;
         // 계속하기 버튼
-        Button resume = new Button(
-                R.mipmap.btn_resume_n,
+        TextButton resume = new TextButton(
+                "RESUME",
                 Metrics.width / 2f,
                 Metrics.height * 0.45f,
                 btnW,
@@ -43,8 +42,8 @@ public class PauseScene extends Scene {
         add(SceneLayer.UI, resume);
 
         // 나가기 버튼
-        Button exit = new Button(
-                R.mipmap.btn_exit_n,
+        TextButton exit = new TextButton(
+                "EXIT",
                 Metrics.width / 2f,
                 Metrics.height * 0.6f,
                 btnW,

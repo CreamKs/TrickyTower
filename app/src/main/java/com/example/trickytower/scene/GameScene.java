@@ -24,7 +24,7 @@ import org.jbox2d.dynamics.contacts.ContactEdge;
 import org.jbox2d.collision.shapes.PolygonShape;
 
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
-import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Button;
+import com.example.trickytower.objects.TextButton;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
@@ -90,8 +90,8 @@ public class GameScene extends Scene {
         ));
         // 일시정지 버튼 추가
         float btnSize = 100f;
-        Button pause = new Button(
-                R.mipmap.btn_pause,
+        TextButton pause = new TextButton(
+                "ll",
                 Metrics.width - btnSize,
                 btnSize,
                 btnSize,
