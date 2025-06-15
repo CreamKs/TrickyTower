@@ -5,11 +5,12 @@ import android.view.MotionEvent;
 
 import com.example.trickytower.R;
 
-import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Button;
+import com.example.trickytower.objects.TextButton;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
+import kr.ac.tukorea.ge.spgp2025.a2dg.framework.res.Sound;
 
 import com.example.trickytower.scene.TitleScene;
 
@@ -19,6 +20,8 @@ public class StageSelectScene extends Scene {
     @Override
     public void onEnter() {
         initLayers(SceneLayer.values().length);
+
+        Sound.playMusic(R.raw.main);
         Sprite bg = new Sprite(
                 R.drawable.bg_title,
                 Metrics.width / 2f,
@@ -35,8 +38,8 @@ public class StageSelectScene extends Scene {
 
         for (int i = 0; i < STAGE_COUNT; i++) {
             final int stage = i + 1;
-            Button btn = new Button(
-                    R.mipmap.btn_start,
+            TextButton btn = new TextButton(
+                    stage + "STAGE",
                     Metrics.width / 2f,
                     startY + i * gap,
                     btnW,
@@ -50,8 +53,8 @@ public class StageSelectScene extends Scene {
         }
 
         // 뒤로 가기 버튼
-        Button back = new Button(
-                R.mipmap.btn_start,
+        TextButton back = new TextButton(
+                "BACK",
                 btnW * 0.6f,
                 Metrics.height * 0.1f,
                 btnW * 0.8f,

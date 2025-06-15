@@ -9,6 +9,7 @@ import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
+import kr.ac.tukorea.ge.spgp2025.a2dg.framework.res.Sound;
 
 import com.example.trickytower.scene.StageSelectScene;
 
@@ -21,6 +22,8 @@ public class TitleScene extends Scene {
     public void onEnter() {
         // 레이어 하나로 배경과 버튼 관리
         initLayers(SceneLayer.values().length);
+
+        Sound.playMusic(R.raw.main);
 
         // 배경 이미지 추가
         Sprite bg = new Sprite(
