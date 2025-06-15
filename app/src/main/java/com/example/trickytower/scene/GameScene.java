@@ -4,7 +4,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.MotionEvent;
-import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -67,17 +66,21 @@ public class GameScene extends Scene {
     private RectF groundBox;
     private RectF leftWallBox;
     private RectF rightWallBox;
-    private static final Paint debugPaint = new Paint();
+    private static final Paint platformPaint = new Paint();
+    private static final Paint goalBlackPaint = new Paint();
+    private static final Paint goalWhitePaint = new Paint();
     static {
-        debugPaint.setStyle(Paint.Style.STROKE);
-        debugPaint.setColor(android.graphics.Color.BLUE);
-        debugPaint.setStrokeWidth(2f);
+        platformPaint.setStyle(Paint.Style.FILL);
+        platformPaint.setColor(0xFF8B4513); // 갈색
+
+        goalBlackPaint.setColor(android.graphics.Color.BLACK);
+        goalWhitePaint.setColor(android.graphics.Color.WHITE);
     }
 
     @Override
     public void onEnter() {
-        // Debug bounding boxes
-        kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView.drawsDebugStuffs = true;
+        // 디버그 표시 끄기
+        kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView.drawsDebugStuffs = false;
 
         world = new World(GRAVITY);
         createGround();
@@ -167,7 +170,7 @@ public class GameScene extends Scene {
                 platformY + groundHeight / 2f);
 
         // 도착 지점 생성 (센서)
-        float goalWidth = CELL_SIZE * 2f;
+        float goalWidth = Metrics.width;
         float goalY = Metrics.height / 2f - (stageIndex - 1) * CELL_SIZE * 2f;
         BodyDef gbd = new BodyDef();
         gbd.type = BodyType.STATIC;
@@ -181,9 +184,9 @@ public class GameScene extends Scene {
         goal.createFixture(gfd);
         goal.setUserData("GOAL");
         goalBox = new RectF(
-                Metrics.width / 2f - goalWidth / 2f,
+                0,
                 goalY - groundHeight / 2f,
-                Metrics.width / 2f + goalWidth / 2f,
+                Metrics.width,
                 goalY + groundHeight / 2f);
     }
 
@@ -209,7 +212,6 @@ public class GameScene extends Scene {
         body.setGravityScale(0f);
         body.setLinearVelocity(new Vec2(0, DROP_SPEED));
         add(SceneLayer.BLOCK, current);
-        Log.d("GameScene", "spawnBlock: " + type + " at (" + startX + ", " + startY + ")");
     }
 
     private void checkForLanding() {
@@ -388,12 +390,26 @@ public class GameScene extends Scene {
         super.draw(canvas);
         for (ComplexBlock b : landedBlocks) b.draw(canvas);
         if (current != null) current.draw(canvas);
-        if (groundBox != null && kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView.drawsDebugStuffs) {
-            canvas.drawRect(groundBox, debugPaint);
-            if (leftWallBox != null) canvas.drawRect(leftWallBox, debugPaint);
-            if (rightWallBox != null) canvas.drawRect(rightWallBox, debugPaint);
-            if (platformBox != null) canvas.drawRect(platformBox, debugPaint);
-            if (goalBox != null) canvas.drawRect(goalBox, debugPaint);
+        if (platformBox != null) {
+            canvas.drawRect(platformBox, platformPaint);
+        }
+        if (goalBox != null) {
+            drawGoal(canvas);
+        }
+    }
+
+    private void drawGoal(Canvas canvas) {
+        int cols = 10;
+        int rows = 2;
+        float cellW = goalBox.width() / cols;
+        float cellH = goalBox.height() / rows;
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                Paint p = ((r + c) % 2 == 0) ? goalWhitePaint : goalBlackPaint;
+                float l = goalBox.left + c * cellW;
+                float t = goalBox.top + r * cellH;
+                canvas.drawRect(l, t, l + cellW, t + cellH, p);
+            }
         }
     }
 
