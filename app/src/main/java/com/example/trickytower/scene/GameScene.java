@@ -24,12 +24,14 @@ import org.jbox2d.collision.shapes.PolygonShape;
 
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
 import com.example.trickytower.objects.TextButton;
+import com.example.trickytower.objects.GoalImage;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
 
 import com.example.trickytower.scene.StageSelectScene;
 import com.example.trickytower.scene.PauseScene;
+import kr.ac.tukorea.ge.spgp2025.a2dg.framework.res.Sound;
 
 public class GameScene extends Scene {
     private static final float CELL_SIZE = 40f;
@@ -50,6 +52,22 @@ public class GameScene extends Scene {
     private int missedCount;
     private RectF platformBox;
     private RectF goalBox;
+    private RectF goalDrawBox;
+
+    private static final int[] BG_IMAGES = {
+            R.drawable.hnesis,
+            R.drawable.elinia,
+            R.drawable.lishangu,
+            R.drawable.kuning,
+            R.drawable.sleepywood
+    };
+    private static final int[] BG_MUSICS = {
+            R.raw.hnesis,
+            R.raw.elinia,
+            R.raw.lishangu,
+            R.raw.kuning,
+            R.raw.sleepywood
+    };
 
     public GameScene() {
         this(1);
@@ -67,14 +85,9 @@ public class GameScene extends Scene {
     private RectF leftWallBox;
     private RectF rightWallBox;
     private static final Paint platformPaint = new Paint();
-    private static final Paint goalBlackPaint = new Paint();
-    private static final Paint goalWhitePaint = new Paint();
     static {
         platformPaint.setStyle(Paint.Style.FILL);
         platformPaint.setColor(0xFF8B4513); // 갈색
-
-        goalBlackPaint.setColor(android.graphics.Color.BLACK);
-        goalWhitePaint.setColor(android.graphics.Color.WHITE);
     }
 
     @Override
@@ -86,11 +99,13 @@ public class GameScene extends Scene {
         createGround();
         createStageObjects();
         initLayers(SceneLayer.values().length);
+        int idx = Math.max(0, Math.min(stageIndex - 1, BG_IMAGES.length - 1));
         add(SceneLayer.BACKGROUND, new Sprite(
-            R.drawable.bg_game,
-            Metrics.width/2f, Metrics.height/2f,
-            Metrics.width, Metrics.height
+                BG_IMAGES[idx],
+                Metrics.width/2f, Metrics.height/2f,
+                Metrics.width, Metrics.height
         ));
+        Sound.playMusic(BG_MUSICS[idx]);
         // 일시정지 버튼 추가
         float btnSize = 100f;
         TextButton pause = new TextButton(
@@ -188,6 +203,10 @@ public class GameScene extends Scene {
                 goalY - groundHeight / 2f,
                 Metrics.width,
                 goalY + groundHeight / 2f);
+        float extra = groundHeight * 0.2f;
+        goalDrawBox = new RectF(goalBox);
+        goalDrawBox.inset(0, -extra / 2f);
+        add(SceneLayer.BACKGROUND, new GoalImage(goalDrawBox));
     }
 
     private void spawnBlock() {
@@ -231,6 +250,7 @@ public class GameScene extends Scene {
                 body.setTransform(new Vec2(body.getPosition().x, centerY / PPM), body.getAngle());
                 // 착지 후에도 동적으로 유지하되 속도를 0으로 리셋하여 중력만 적용되도록 한다
                 body.setType(BodyType.DYNAMIC);
+                Sound.playEffect(R.raw.block);
 
                 if ("GROUND".equals(data)) {
                     // 바닥에 닿았으면 블록을 삭제하고 카운트 증가
@@ -393,24 +413,7 @@ public class GameScene extends Scene {
         if (platformBox != null) {
             canvas.drawRect(platformBox, platformPaint);
         }
-        if (goalBox != null) {
-            drawGoal(canvas);
-        }
-    }
-
-    private void drawGoal(Canvas canvas) {
-        int cols = 10;
-        int rows = 2;
-        float cellW = goalBox.width() / cols;
-        float cellH = goalBox.height() / rows;
-        for (int r = 0; r < rows; r++) {
-            for (int c = 0; c < cols; c++) {
-                Paint p = ((r + c) % 2 == 0) ? goalWhitePaint : goalBlackPaint;
-                float l = goalBox.left + c * cellW;
-                float t = goalBox.top + r * cellH;
-                canvas.drawRect(l, t, l + cellW, t + cellH, p);
-            }
-        }
+        // goal 이미지는 별도 오브젝트로 그린다
     }
 
     @Override

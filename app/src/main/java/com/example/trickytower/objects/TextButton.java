@@ -9,6 +9,8 @@ import android.view.MotionEvent;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.interfaces.IGameObject;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.interfaces.ITouchable;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
+import kr.ac.tukorea.ge.spgp2025.a2dg.framework.res.Sound;
+import com.example.trickytower.R;
 
 public class TextButton implements IGameObject, ITouchable {
     public interface OnTouchListener {
@@ -58,6 +60,7 @@ public class TextButton implements IGameObject, ITouchable {
         } else if (action == MotionEvent.ACTION_UP) {
             if (!captures) return false;
             captures = false;
+            Sound.playEffect(R.raw.click);
             return listener.onTouch(false);
         }
         return captures;
