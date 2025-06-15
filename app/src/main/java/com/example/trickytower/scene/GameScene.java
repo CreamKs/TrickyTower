@@ -95,10 +95,11 @@ public class GameScene extends Scene {
         // 디버그 표시 끄기
         kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView.drawsDebugStuffs = false;
 
+        initLayers(SceneLayer.values().length);
+
         world = new World(GRAVITY);
         createGround();
         createStageObjects();
-        initLayers(SceneLayer.values().length);
         int idx = Math.max(0, Math.min(stageIndex - 1, BG_IMAGES.length - 1));
         add(SceneLayer.BACKGROUND, new Sprite(
                 BG_IMAGES[idx],
