@@ -32,18 +32,6 @@ Tricky Tower는 중력 기반 물리 엔진을 활용해 블록을 쌓아 올리
 |        10주차        |    6/9 – 6/15    |     3     |
 |        11주차        | 6/16 – 6/16 (부분) |     1     |
 
-### 오늘(2025-05-14) 커밋 내역
-
-* `076d2ad`: GameScene 구현 및 블록 한 개 떨어짐
-* `f85b01e`: TitleScene 출력
-* `fc9f4cc`: 기본적 게임 뼈대 제작
-* `cd1213b`: 기존 쿠키런 삭제
-* `cbbc575`: Create 1차 README.txt
-* `797bd33`: Create README.md
-* `15be71f`: FrameWork 이식
-* `8b2f59a`: FrameWork 이식
-* `162509d`: TrickyTower Repository Create
-
 ## 4. 목표 변경 사항
 
 물리 부분에서 시간을 많이 소모하여 10개의 스테이지에서 5개의 스테이지로 변경.
