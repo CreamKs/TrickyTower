@@ -114,12 +114,15 @@ public class GameScene extends Scene {
         touchEnabled = false;
         isFastDropping = false;
         ShapeType type = ShapeType.values()[rand.nextInt(ShapeType.values().length)];
+        float gridStep = CELL_SIZE * ComplexBlock.getHitboxScale();
         float startX = Metrics.width/2f;
         if (type == ShapeType.O) {
             // O 블록은 실제 히트박스가 셀 크기보다 작아 중앙 정렬 시 살짝 왼쪽으로
             // 치우쳐 보인다. 이를 보정하기 위해 절반의 차이만큼 우측으로 이동한다.
             startX += (CELL_SIZE * (1f - ComplexBlock.getHitboxScale())) / 2f;
         }
+        // 최초 생성 위치도 격자에 맞추어 정렬한다
+        startX = Math.round(startX / gridStep) * gridStep;
         float startY = - type.getHeightCells() * CELL_SIZE;
         current = new ComplexBlock(type, startX, startY, CELL_SIZE);
         current.createPhysicsBody(world);
@@ -156,11 +159,29 @@ public class GameScene extends Scene {
         }
     }
 
+    private void alignCurrentToGrid() {
+        if (current == null) return;
+        Body body = current.getBody();
+        if (body.getGravityScale() != 0f) return;
+        float hitStep = CELL_SIZE * ComplexBlock.getHitboxScale() / PPM;
+        float x = body.getPosition().x;
+        float newX = Math.round(x / hitStep) * hitStep;
+        float halfW = current.getWidth() / 2f / PPM;
+        float minX = halfW;
+        float maxX = Metrics.width / PPM - halfW;
+        if (newX < minX) newX = minX;
+        if (newX > maxX) newX = maxX;
+        if (Math.abs(newX - x) > 1e-4f) {
+            body.setTransform(new Vec2(newX, body.getPosition().y), body.getAngle());
+        }
+    }
+
     @Override
     public void update() {
         if (current != null) {
             float speed = isFastDropping ? FAST_DROP_SPEED : DROP_SPEED;
             current.getBody().setLinearVelocity(new Vec2(0, speed));
+            alignCurrentToGrid();
         }
         world.step(TIME_STEP, VELOCITY_ITERS, POSITION_ITERS);
         super.update();
@@ -195,6 +216,8 @@ public class GameScene extends Scene {
                     float maxX = Metrics.width / PPM - halfW;
                     if (newX < minX) newX = minX;
                     if (newX > maxX) newX = maxX;
+                    float gridStepWorld = hitStep / PPM;
+                    newX = Math.round(newX / gridStepWorld) * gridStepWorld;
                     current.getBody().setTransform(new Vec2(newX, pos.y), current.getBody().getAngle());
                     lastMoveTime = now;
                     touchStartX = pts[0];
