@@ -333,6 +333,11 @@ public class GameScene extends Scene {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        // 먼저 UI 레이어의 터치 오브젝트에게 기회를 준다
+        if (super.onTouchEvent(event)) {
+            return true;
+        }
+
         float[] pts = Metrics.fromScreen(event.getX(), event.getY());
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
