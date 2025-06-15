@@ -219,6 +219,7 @@ public class GameScene extends Scene {
                     }
                 }
                 landedBlocks.add(current);
+                checkGoal(current); // 착지한 블록이 목표 지점에 도달했는지 확인
                 spawnBlock();
                 break;
             }
@@ -274,7 +275,6 @@ public class GameScene extends Scene {
 
         if (current != null) {
             checkForLanding();
-            checkGoal(current);
         }
         for (ComplexBlock b : landedBlocks) {
             checkGoal(b);
