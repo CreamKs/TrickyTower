@@ -16,7 +16,7 @@ public class BlockCollisionHelper {
      * 현재 블록이 충돌할 Y 좌표(픽셀 단위) 반환
      * NaN이면 충돌 없음
      */
-    public static float getCollisionContactY(ComplexBlock block, List<ComplexBlock> landedBlocks) {
+    public static float getCollisionContactY(ComplexBlock block, List<ComplexBlock> landedBlocks, RectF platformBox) {
         float contactY = Float.NaN;
         List<RectF> cells = block.getCellBoxes();
         for (RectF cell : cells) {
@@ -24,6 +24,13 @@ public class BlockCollisionHelper {
             // 바닥 충돌
             if (bottom >= Metrics.height - EPSILON) {
                 contactY = Float.isNaN(contactY) ? Metrics.height : Math.min(contactY, Metrics.height);
+            }
+            if (platformBox != null
+                    && cell.right > platformBox.left && cell.left < platformBox.right
+                    && bottom >= platformBox.top - EPSILON && cell.top <= platformBox.top + EPSILON) {
+                contactY = Float.isNaN(contactY)
+                        ? platformBox.top
+                        : Math.min(contactY, platformBox.top);
             }
             // 이미 착지한 블록의 각 셀과 비교
             for (ComplexBlock landed : landedBlocks) {

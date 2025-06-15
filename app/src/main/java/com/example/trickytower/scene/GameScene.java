@@ -201,7 +201,7 @@ public class GameScene extends Scene {
             Body other = ce.other;
             Object data = other.getUserData();
             if ("GROUND".equals(data) || data instanceof ComplexBlock || "PLATFORM".equals(data)) {
-                float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks);
+                float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks, platformBox);
                 if (Float.isNaN(contactY)) return; // 계산 실패 시 무시
                 float bottomOffset = current.getBottomOffset();
                 float centerY = contactY - bottomOffset;
