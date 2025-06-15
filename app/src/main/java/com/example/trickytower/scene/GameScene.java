@@ -26,6 +26,9 @@ import org.jbox2d.collision.shapes.PolygonShape;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.objects.Sprite;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
+import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
+
+import com.example.trickytower.scene.StageSelectScene;
 
 public class GameScene extends Scene {
     private static final float CELL_SIZE = 40f;
@@ -41,6 +44,19 @@ public class GameScene extends Scene {
     private ComplexBlock current;
     private final List<ComplexBlock> landedBlocks = new ArrayList<>();
     private final Random rand = new Random();
+
+    private final int stageIndex;
+    private int missedCount;
+    private RectF platformBox;
+    private RectF goalBox;
+
+    public GameScene() {
+        this(1);
+    }
+
+    public GameScene(int stageIndex) {
+        this.stageIndex = stageIndex;
+    }
 
     private boolean touchEnabled;
     private boolean isFastDropping;
@@ -63,6 +79,7 @@ public class GameScene extends Scene {
 
         world = new World(GRAVITY);
         createGround();
+        createStageObjects();
         initLayers(SceneLayer.values().length);
         add(SceneLayer.BACKGROUND, new Sprite(
             R.drawable.bg_game,
@@ -110,6 +127,48 @@ public class GameScene extends Scene {
         rightWallBox = new RectF(Metrics.width, 0, Metrics.width + wallWidth, Metrics.height);
     }
 
+    private void createStageObjects() {
+        float groundHeight = CELL_SIZE / 2f;
+        // 작은 발판 생성 (중력 영향 없음)
+        float platformWidth = CELL_SIZE * 3f;
+        float platformY = Metrics.height - groundHeight * 3f;
+        BodyDef bd = new BodyDef();
+        bd.type = BodyType.STATIC;
+        bd.position.set(Metrics.width / 2f / PPM, platformY / PPM);
+        Body platform = world.createBody(bd);
+        PolygonShape shape = new PolygonShape();
+        shape.setAsBox(platformWidth / 2f / PPM, groundHeight / 2f / PPM);
+        FixtureDef fd = new FixtureDef();
+        fd.shape = shape;
+        platform.createFixture(fd);
+        platform.setUserData("PLATFORM");
+        platformBox = new RectF(
+                Metrics.width / 2f - platformWidth / 2f,
+                platformY - groundHeight / 2f,
+                Metrics.width / 2f + platformWidth / 2f,
+                platformY + groundHeight / 2f);
+
+        // 도착 지점 생성 (센서)
+        float goalWidth = CELL_SIZE * 2f;
+        float goalY = Metrics.height / 2f - (stageIndex - 1) * CELL_SIZE * 2f;
+        BodyDef gbd = new BodyDef();
+        gbd.type = BodyType.STATIC;
+        gbd.position.set(Metrics.width / 2f / PPM, goalY / PPM);
+        Body goal = world.createBody(gbd);
+        PolygonShape gshape = new PolygonShape();
+        gshape.setAsBox(goalWidth / 2f / PPM, groundHeight / 2f / PPM);
+        FixtureDef gfd = new FixtureDef();
+        gfd.shape = gshape;
+        gfd.isSensor = true;
+        goal.createFixture(gfd);
+        goal.setUserData("GOAL");
+        goalBox = new RectF(
+                Metrics.width / 2f - goalWidth / 2f,
+                goalY - groundHeight / 2f,
+                Metrics.width / 2f + goalWidth / 2f,
+                goalY + groundHeight / 2f);
+    }
+
     private void spawnBlock() {
         touchEnabled = false;
         isFastDropping = false;
@@ -141,7 +200,7 @@ public class GameScene extends Scene {
             if (!ce.contact.isTouching()) continue;
             Body other = ce.other;
             Object data = other.getUserData();
-            if ("GROUND".equals(data) || data instanceof ComplexBlock) {
+            if ("GROUND".equals(data) || data instanceof ComplexBlock || "PLATFORM".equals(data)) {
                 float contactY = BlockCollisionHelper.getCollisionContactY(current, landedBlocks);
                 if (Float.isNaN(contactY)) return; // 계산 실패 시 무시
                 float bottomOffset = current.getBottomOffset();
@@ -152,6 +211,13 @@ public class GameScene extends Scene {
                 body.setTransform(new Vec2(body.getPosition().x, centerY / PPM), body.getAngle());
                 // 착지 후에도 동적으로 유지하되 속도를 0으로 리셋하여 중력만 적용되도록 한다
                 body.setType(BodyType.DYNAMIC);
+                if ("GROUND".equals(data)) {
+                    missedCount++;
+                    if (missedCount >= 3) {
+                        stageFail();
+                        return;
+                    }
+                }
                 landedBlocks.add(current);
                 spawnBlock();
                 break;
@@ -176,6 +242,24 @@ public class GameScene extends Scene {
         }
     }
 
+    private void checkGoal(ComplexBlock block) {
+        if (goalBox == null) return;
+        for (RectF r : block.getCellBoxes()) {
+            if (RectF.intersects(r, goalBox)) {
+                stageClear();
+                break;
+            }
+        }
+    }
+
+    private void stageClear() {
+        GameView.view.changeScene(new StageSelectScene());
+    }
+
+    private void stageFail() {
+        GameView.view.changeScene(new StageSelectScene());
+    }
+
     @Override
     public void update() {
         if (current != null) {
@@ -188,7 +272,13 @@ public class GameScene extends Scene {
         if (current != null) current.update();
         for (ComplexBlock b : landedBlocks) b.update();
 
-        if (current != null) checkForLanding();
+        if (current != null) {
+            checkForLanding();
+            checkGoal(current);
+        }
+        for (ComplexBlock b : landedBlocks) {
+            checkGoal(b);
+        }
     }
 
     @Override
@@ -247,6 +337,8 @@ public class GameScene extends Scene {
             canvas.drawRect(groundBox, debugPaint);
             if (leftWallBox != null) canvas.drawRect(leftWallBox, debugPaint);
             if (rightWallBox != null) canvas.drawRect(rightWallBox, debugPaint);
+            if (platformBox != null) canvas.drawRect(platformBox, debugPaint);
+            if (goalBox != null) canvas.drawRect(goalBox, debugPaint);
         }
     }
 }

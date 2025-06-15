@@ -10,6 +10,8 @@ import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
 
+import com.example.trickytower.scene.StageSelectScene;
+
 /**
  * TitleScene은 게임의 첫 화면(타이틀)을 담당합니다.
  * 배경과 시작 버튼을 그리고, 버튼 터치 시 GameScene으로 전환합니다.
@@ -41,8 +43,8 @@ public class TitleScene extends Scene {
                 btnHeight,
                 pressed -> {
                     if (!pressed) {
-                        // 버튼에서 손을 뗄 때 다음 씬으로 전환
-                        changeScene(new GameScene());
+                        // 스테이지 선택 화면으로 전환
+                        changeScene(new StageSelectScene());
                     }
                     return true;
                 }
