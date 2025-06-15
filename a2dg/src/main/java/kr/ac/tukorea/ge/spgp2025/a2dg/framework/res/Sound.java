@@ -11,12 +11,18 @@ import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
 public class Sound {
     protected static MediaPlayer mediaPlayer;
     protected static SoundPool soundPool;
+    private static int currentMusicResId;
 
     public static void playMusic(int resId) {
+        if (mediaPlayer != null && mediaPlayer.isPlaying() && currentMusicResId == resId) {
+            // 이미 같은 배경음이 재생 중이면 새로 시작하지 않는다
+            return;
+        }
         if (mediaPlayer != null) {
             mediaPlayer.stop();
         }
         mediaPlayer = MediaPlayer.create(GameView.view.getContext(), resId);
+        currentMusicResId = resId;
         mediaPlayer.setLooping(true);
         mediaPlayer.start();
     }
@@ -24,6 +30,7 @@ public class Sound {
         if (mediaPlayer == null) return;
         mediaPlayer.stop();
         mediaPlayer = null;
+        currentMusicResId = 0;
     }
     public static void pauseMusic() {
         if (mediaPlayer == null) return;
