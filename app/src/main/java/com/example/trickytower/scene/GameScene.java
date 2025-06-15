@@ -391,4 +391,10 @@ public class GameScene extends Scene {
             if (goalBox != null) canvas.drawRect(goalBox, debugPaint);
         }
     }
+
+    @Override
+    protected int getTouchLayerIndex() {
+        // UI 레이어에서 터치 이벤트를 처리하도록 설정
+        return SceneLayer.UI.ordinal();
+    }
 }
