@@ -11,6 +11,8 @@ import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
 
+import com.example.trickytower.scene.TitleScene;
+
 public class StageSelectScene extends Scene {
     private static final int STAGE_COUNT = 5;
 
@@ -28,8 +30,9 @@ public class StageSelectScene extends Scene {
 
         float btnW = 250f;
         float btnH = 90f;
-        float startY = Metrics.height * 0.3f;
         float gap = btnH * 1.3f;
+        float startY = Metrics.height * 0.3f + gap * 5f; // 첫 버튼을 6번째 위치에 떨어진다
+
         for (int i = 0; i < STAGE_COUNT; i++) {
             final int stage = i + 1;
             Button btn = new Button(
@@ -45,6 +48,20 @@ public class StageSelectScene extends Scene {
             );
             add(SceneLayer.UI, btn);
         }
+
+        // 뒤로 가기 버튼
+        Button back = new Button(
+                R.mipmap.btn_start,
+                btnW * 0.6f,
+                Metrics.height * 0.1f,
+                btnW * 0.8f,
+                btnH * 0.8f,
+                pressed -> {
+                    if (!pressed) changeScene(new TitleScene());
+                    return true;
+                }
+        );
+        add(SceneLayer.UI, back);
     }
 
     private void changeScene(Scene next) {
