@@ -95,9 +95,12 @@ public class GameScene extends Scene {
     private RectF leftWallBox;
     private RectF rightWallBox;
     private static final Paint platformPaint = new Paint();
+    private static final Paint missedPaint = new Paint();
     static {
         platformPaint.setStyle(Paint.Style.FILL);
         platformPaint.setColor(0xFF8B4513); // 갈색
+        missedPaint.setStyle(Paint.Style.FILL);
+        missedPaint.setColor(Color.RED);
     }
 
     @Override
@@ -436,6 +439,17 @@ public class GameScene extends Scene {
         if (current != null) current.draw(canvas);
         if (platformBox != null) {
             canvas.drawRect(platformBox, platformPaint);
+        }
+        // 떨어진 블록 개수만큼 빨간 네모 표시
+        if (groundBox != null) {
+            float size = CELL_SIZE;
+            float margin = size * 0.3f;
+            float left = margin;
+            float top = groundBox.top - size - margin;
+            for (int i = 0; i < missedCount; i++) {
+                canvas.drawRect(left + i * (size + margin), top,
+                        left + i * (size + margin) + size, top + size, missedPaint);
+            }
         }
         // goal 이미지는 별도 오브젝트로 그린다
         if (resultText != null) {
