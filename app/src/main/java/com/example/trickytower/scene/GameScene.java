@@ -211,19 +211,49 @@ public class GameScene extends Scene {
                 body.setTransform(new Vec2(body.getPosition().x, centerY / PPM), body.getAngle());
                 // 착지 후에도 동적으로 유지하되 속도를 0으로 리셋하여 중력만 적용되도록 한다
                 body.setType(BodyType.DYNAMIC);
+
                 if ("GROUND".equals(data)) {
+                    // 바닥에 닿았으면 블록을 삭제하고 카운트 증가
+                    remove(SceneLayer.BLOCK, current);
+                    world.destroyBody(body);
+                    current = null;
                     missedCount++;
                     if (missedCount >= 3) {
                         stageFail();
                         return;
                     }
+                    spawnBlock();
+                    break;
                 }
+
                 landedBlocks.add(current);
                 checkGoal(current); // 착지한 블록이 목표 지점에 도달했는지 확인
                 spawnBlock();
                 break;
             }
         }
+    }
+
+    private void checkLandedBlocksOnGround() {
+        List<ComplexBlock> toRemove = new ArrayList<>();
+        for (ComplexBlock b : landedBlocks) {
+            Body body = b.getBody();
+            for (ContactEdge ce = body.getContactList(); ce != null; ce = ce.next) {
+                if (!ce.contact.isTouching()) continue;
+                if ("GROUND".equals(ce.other.getUserData())) {
+                    remove(SceneLayer.BLOCK, b);
+                    world.destroyBody(body);
+                    toRemove.add(b);
+                    missedCount++;
+                    if (missedCount >= 3) {
+                        stageFail();
+                        return;
+                    }
+                    break;
+                }
+            }
+        }
+        landedBlocks.removeAll(toRemove);
     }
 
     private void alignCurrentToGrid() {
@@ -272,6 +302,8 @@ public class GameScene extends Scene {
         super.update();
         if (current != null) current.update();
         for (ComplexBlock b : landedBlocks) b.update();
+
+        checkLandedBlocksOnGround();
 
         if (current != null) {
             checkForLanding();
