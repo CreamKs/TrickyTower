@@ -5,6 +5,7 @@ package com.example.trickytower.scene;
  */
 public enum SceneLayer {
     BACKGROUND,
+    GOAL,
     BLOCK,
     UI
 }

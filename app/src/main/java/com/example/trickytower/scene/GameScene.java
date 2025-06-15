@@ -29,8 +29,8 @@ import kr.ac.tukorea.ge.spgp2025.a2dg.framework.scene.Scene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.Metrics;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.view.GameView;
 
-import com.example.trickytower.scene.StageSelectScene;
 import com.example.trickytower.scene.PauseScene;
+import com.example.trickytower.scene.TitleScene;
 import kr.ac.tukorea.ge.spgp2025.a2dg.framework.res.Sound;
 
 public class GameScene extends Scene {
@@ -53,6 +53,7 @@ public class GameScene extends Scene {
     private RectF platformBox;
     private RectF goalBox;
     private RectF goalDrawBox;
+    private boolean isEnding;
 
     private static final int[] BG_IMAGES = {
             R.drawable.hnesis,
@@ -207,7 +208,7 @@ public class GameScene extends Scene {
         float extra = groundHeight * 0.2f;
         goalDrawBox = new RectF(goalBox);
         goalDrawBox.inset(0, -extra / 2f);
-        add(SceneLayer.BACKGROUND, new GoalImage(goalDrawBox));
+        add(SceneLayer.GOAL, new GoalImage(goalDrawBox));
     }
 
     private void spawnBlock() {
@@ -325,15 +326,25 @@ public class GameScene extends Scene {
     }
 
     private void stageClear() {
-        GameView.view.changeScene(new StageSelectScene());
+        if (isEnding) return;
+        isEnding = true;
+        Sound.stopMusic();
+        Sound.playAndRun(R.raw.victory, mp -> GameView.view.changeScene(new TitleScene()));
     }
 
     private void stageFail() {
-        GameView.view.changeScene(new StageSelectScene());
+        if (isEnding) return;
+        isEnding = true;
+        Sound.stopMusic();
+        Sound.playAndRun(R.raw.failed, mp -> GameView.view.changeScene(new TitleScene()));
     }
 
     @Override
     public void update() {
+        if (isEnding) {
+            super.update();
+            return;
+        }
         if (current != null) {
             float speed = isFastDropping ? FAST_DROP_SPEED : DROP_SPEED;
             current.getBody().setLinearVelocity(new Vec2(0, speed));
@@ -356,6 +367,7 @@ public class GameScene extends Scene {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (isEnding) return true;
         // 먼저 UI 레이어의 터치 오브젝트에게 기회를 준다
         if (super.onTouchEvent(event)) {
             return true;

@@ -41,6 +41,15 @@ public class Sound {
         mediaPlayer.start();
     }
 
+    public static void playAndRun(int resId, MediaPlayer.OnCompletionListener listener) {
+        MediaPlayer mp = MediaPlayer.create(GameView.view.getContext(), resId);
+        mp.setOnCompletionListener(m -> {
+            m.release();
+            if (listener != null) listener.onCompletion(m);
+        });
+        mp.start();
+    }
+
     private static final HashMap<Integer, Integer> soundIdMap = new HashMap<>();
     public static void playEffect(int resId) {
         SoundPool pool = getSoundPool();
