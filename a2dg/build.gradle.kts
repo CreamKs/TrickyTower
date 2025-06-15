@@ -31,7 +31,8 @@ android {
 dependencies {
     implementation(libs.appcompat)
     implementation(libs.material)
-    testImplementation(libs.junit)
+    // Jackson 라이브러리를 직접 지정해 "Unresolved reference" 오류를 방지
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.1")
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 }
